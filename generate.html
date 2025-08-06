@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Generate QR - QuickAttend</title>
+  <link rel="stylesheet" href="qr.css" />
+</head>
+<body>
+  <img src="logo_qrsystem.png" alt="Logo" class="logo-fixed" />
+
+  <div class="generate-container">
+    <h1 class="form-title">Generate Attendance QR</h1>
+
+    <form class="generate-form">
+  <select required>
+    <option value="" disabled selected>Select Class</option>
+    <option>FY</option>
+    <option>SY</option>
+  </select>
+
+  <select required>
+    <option value="" disabled selected>Select Stream</option>
+    <option>BSc IT</option>
+    <option>BCA</option>
+  </select>
+
+  <select required>
+    <option value="" disabled selected>Select Semester</option>
+    <option>Sem 1</option>
+    <option>Sem 2</option>
+    <option>Sem 3</option>
+  </select>
+
+  <select required>
+    <option value="" disabled selected>Select Subject</option>
+    <option>C++</option>
+    <option>DBMS</option>
+    <option>SMM</option>
+    <option>Math</option>
+  </select>
+
+<input type="text" placeholder="Faculty ID (e.g., T0123)"
+       pattern="T0\d{3}" required
+       title="Faculty ID must start with T0 followed by 3 digits (e.g., T0123)" />
+    <button type="submit" class="qr-btn">Generate QR</button>
+
+ <div class="qr-preview" id="qrPreview" style="display: none;">
+  <h2>QR Code Generated!</h2>
+  <img id="qrImage" src="" alt="QR Code" />
+  <div class="qr-actions">
+    <a id="downloadBtn" href="#" download="attendance_qr.png" class="qr-btn">Download QR</a>
+    <button onclick="window.location.href='teacher.html'" class="qr-btn back-btn">Back to Dashboard</button>
+  </div>
+</div>
+
+
+</form>
+  </div>
+</body>
+</html>

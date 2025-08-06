@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teacher Dashboard - QuickAttend</title>
+  <link rel="stylesheet" href="qr.css" />
+  <style>
+    body {
+      background: linear-gradient(to bottom, #e6f3ff, #ffffff);
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .teacher-container {
+      max-width: 420px;
+      margin: 40px auto;
+      padding: 30px 20px;
+      background: #f5fbff;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      position: relative;
+    }
+
+    .logo-fixed {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 70px;
+    }
+
+    .teacher-photo {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 3px solid #0b4d91;
+      object-fit: cover;
+      margin-top: 20px;
+      margin-bottom: 15px;
+      animation: bounceIn 1s ease;
+    }
+
+    .teacher-title {
+      font-size: 26px;
+      color: #0b4d91;
+      margin-bottom: 20px;
+    }
+
+    .teacher-title span {
+      color: #1d84f2;
+    }
+
+    .teacher-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .teacher-buttons button {
+      padding: 12px;
+      background-color: #0056b3;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .teacher-buttons button:hover {
+      background-color: #003c80;
+    }
+
+    .logout-btn {
+      background-color: #d32f2f;
+      padding: 8px 20px;
+      font-size: 14px;
+      border-radius: 50px;
+      margin-top: 30px;
+    }
+
+    .logout-btn:hover {
+      background-color: #b71c1c;
+    }
+
+    @keyframes bounceIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      60% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <div class="teacher-container">
+    <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed" />
+    
+    <img src="Lteacher.jpg" alt="Teacher Photo" class="teacher-photo" />
+    <h1 class="teacher-title">Welcome, <span>Teacher</span></h1>
+
+    <div class="teacher-buttons">
+      <button onclick="location.href='generate.html'">🧾 Generate QR</button>
+      <button onclick="location.href='viewT.html'">📋 View Attendance</button>
+      <button onclick="location.href='summaryT.html'">📊 Monthly Summary</button>
+    </div>
+
+    <button class="logout-btn" onclick="location.href='qr.html'">Logout</button>
+  </div>
+</body>
+</html>

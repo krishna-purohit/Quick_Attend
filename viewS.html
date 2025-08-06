@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Today's Attendance - QuickAttend</title>
+  <link rel="stylesheet" href="qr.css" />
+</head>
+<body>
+  <div class="student-container">
+    <img src="logo_qrsystem.png" class="student-logo" />
+    <h2>📅 Today's Attendance</h2>
+    <p style="font-size: 18px; margin: 20px 0;">Date: <span id="todayDate"></span></p>
+    <p style="color: green; font-weight: bold;">✔ Present</p>
+<button class="back-btn" onclick="location.href='student.html'">⬅ Back</button>
+  </div>
+
+  <script>
+    const today = new Date();
+    document.getElementById("todayDate").textContent = today.toLocaleDateString();
+  </script>
+</body>
+</html>

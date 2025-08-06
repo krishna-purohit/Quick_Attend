@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="qr.css">
+  <style>
+    body {
+      background: linear-gradient(to bottom, #e6f3ff, #ffffff);
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .student-container {
+      max-width: 420px;
+      margin: 40px auto;
+      padding: 30px 20px;
+      background: #f5fbff;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      position: relative;
+    }
+
+    .student-logo {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 70px;
+    }
+
+    .student-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 3px solid #0b4d91;
+      object-fit: cover;
+      margin-top: 20px;
+      margin-bottom: 15px;
+      animation: bounceIn 1s ease;
+    }
+
+    .student-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .student-buttons button {
+      padding: 12px;
+      background-color: #0056b3;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .student-buttons button:hover {
+      background-color: #003c80;
+    }
+
+    .logout-btn {
+      background-color: #d32f2f;
+      padding: 8px 20px;
+      font-size: 14px;
+      border-radius: 50px;
+      margin-top: 30px;
+    }
+
+    .logout-btn:hover {
+      background-color: #b71c1c;
+    }
+
+    @keyframes bounceIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      60% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="student-container">
+    <img src="logo_qrsystem.png" alt="Logo" class="student-logo" />
+    <img src="Lstudent.jpg" alt="Student Avatar" class="student-avatar" />
+    
+    <div class="student-buttons">
+      <button onclick="location.href='scan.html'">📍 Mark Attendance</button>
+      <button onclick="location.href='ViewS.html'">📅 Today’s Attendance</button>
+      <button onclick="location.href='summaryS.html'">📊 Monthly Report</button>
+    </div>
+
+    <button class="logout-btn" onclick="location.href='qr.html'">Logout</button>
+  </div>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Attendance Summary</title>
+  <link rel="stylesheet" href="qr.css">
+  <style>
+    .summary-container {
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 30px 20px;
+      background: #f1f9ff;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .summary-header {
+      font-size: 22px;
+      font-weight: bold;
+      color: #0b4d91;
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 12px;
+      border: 1.5px solid #ccc;
+      font-size: 16px;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .summary-table th,
+    .summary-table td {
+      padding: 10px;
+      text-align: left;
+      font-size: 15px;
+    }
+
+    .summary-table th {
+      background-color: #d0e7ff;
+      color: #003c80;
+    }
+
+    .summary-table tr:nth-child(even) {
+      background-color: #eef6ff;
+    }
+
+    .percent {
+      font-weight: bold;
+    }
+
+    .back-btn {
+      margin-top: 25px;
+      padding: 10px 20px;
+      background-color: #0091ea;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @media (min-width: 768px) {
+      .summary-container {
+        max-width: 700px;
+      }
+    }
+  </style>
+</head>
+<body>
+         <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed">
+
+  <div class="summary-container">
+    <div class="summary-header">📊 Attendance Summary Report</div>
+
+    <select>
+      <option selected disabled>Select Year</option>
+      <option>First Year</option>
+      <option>Second Year</option>
+      <option>Third Year</option>
+    </select>
+
+    <select>
+      <option selected disabled>Select Semester</option>
+      <option>1st Semester</option>
+      <option>2rd Semester</option>
+      <option>3th Semester</option>
+    </select>
+
+    <select>
+      <option selected disabled>Select Subject</option>
+      <option>Java</option>
+      <option>DBMS</option>
+      <option>CN</option>
+      <option>OS</option>
+    </select>
+
+    <select>
+      <option selected disabled>Select Course</option>
+      <option>BCA</option>
+      <option>BSCIT</option>
+    </select>
+
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>Roll No</th>
+          <th>Name</th>
+          <th>Attendance %</th>
+        </tr>
+      </thead>
+      <tbody id="summaryData">
+        <!-- Sample rows (will come from backend) -->
+        <tr>
+          <td>1</td>
+          <td>Krishna Rajpurohit</td>
+          <td class="percent">88%</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Hiren Bhatt</td>
+          <td class="percent">92%</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <button class="back-btn" onclick="location.href='teacher.html'">⬅ BACK</button>
+  </div>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>View Attendance</title>
+  <link rel="stylesheet" href="qr.css" />
+  <style>
+    .view-container {
+      max-width: 420px;
+      margin: auto;
+      padding: 30px 20px;
+      background: #f1f9ff;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      margin-top: 40px;
+    }
+
+    .view-header {
+      font-size: 22px;
+      font-weight: bold;
+      color: #0b4d91;
+      margin-bottom: 25px;
+      text-align: center;
+    }
+
+    select, input[type="date"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 12px;
+      border: 1.5px solid #ccc;
+      font-size: 16px;
+    }
+
+    .attendance-table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+
+    .attendance-table th,
+    .attendance-table td {
+      padding: 12px 8px;
+      text-align: left;
+      font-size: 15px;
+    }
+
+    .attendance-table tr:nth-child(even) {
+      background-color: #e9f4ff;
+    }
+
+    .status {
+      font-weight: bold;
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+
+    .present {
+      background-color: #c8f7c5;
+      color: green;
+    }
+
+    .absent {
+      background-color: #f9c2c2;
+      color: red;
+    }
+
+    .back-btn {
+      margin-top: 25px;
+      padding: 10px 20px;
+      background-color: #0091ea;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @media (min-width: 768px) {
+      .view-container {
+        max-width: 600px;
+      }
+    }
+  </style>
+</head>
+<body>
+      <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed">
+  <div class="view-container">
+    <div class="view-header">🔍 View Attendance</div>
+
+    <select name="year" required>
+      <option selected disabled>Select Year</option>
+      <option>First Year</option>
+      <option>Second Year</option>
+      <option>Third Year</option>
+    </select>
+
+    <select name="semester" required>
+      <option selected disabled>Select Semester</option>
+      <option>3rd Semester</option>
+      <option>5th Semester</option>
+    </select>
+
+    <select name="subject" required>
+      <option selected disabled>Select Subject</option>
+      <option>Java Language</option>
+      <option>Python Language</option>
+      <option>Computing Networking</option>
+    </select>
+
+    <select name="course" required>
+      <option selected disabled>Select Course</option>
+      <option>IMCA</option>
+      <option>IMSCIT</option>
+    </select>
+
+    <input type="date" id="todayDate" readonly />
+
+    <tbody id="studentList">
+  <!-- Student data will be loaded dynamically from backend -->
+</tbody>
+
+    <button class="back-btn" onclick="location.href='teacher.html'">⬅ BACK</button>
+  </div>
+   <script>
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById("todayDate").value = today;
+</script>
+
+</body>
+</html>

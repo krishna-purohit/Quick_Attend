@@ -1,0 +1,460 @@
+/* --- RESET --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* --- SPLASH SCREEN --- */
+.splash-screen {
+  height: 100vh;
+  width: 100%;
+  background: radial-gradient(circle at top left, #b3e5fc, #ffffff);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  animation: fadeOut 1s ease 2.5s forwards;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+}
+
+.animated-bg {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(-45deg, #b3e5fc, #ffffff, #81d4fa, #e3f2fd);
+  background-size: 400% 400%;
+  z-index: -1;
+  animation: moveBg 6s ease infinite;
+}
+
+.splash-logo {
+  width: 100px;
+  margin-bottom: 20px;
+  animation: bounceIn 1s ease;
+}
+
+.splash-title {
+  font-size: 36px;
+  color: #000;
+  margin-bottom: 10px;
+  animation: fadeInUp 1s ease 0.6s forwards;
+  opacity: 0;
+}
+
+.splash-title span {
+  color: #0091EA;
+}
+
+.splash-subtitle {
+  font-size: 18px;
+  color: #555;
+  animation: fadeInUp 1s ease 1s forwards;
+  opacity: 0;
+}
+
+/* --- LOGIN SCREEN --- */
+.login-screen.full {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom right, #e6f3ff, #ffffff);
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 1s ease, visibility 0s linear 1s;
+}
+
+.login-screen.show {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.container {
+  width: 100%;
+  max-width: 420px;
+}
+
+.login-card {
+  background: white;
+  padding: 30px 20px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  animation: slideFadeIn 1.2s ease;
+}
+
+.logo {
+  width: 100px;
+  margin-bottom: 15px;
+}
+
+.login-card h1 {
+  font-size: 26px;
+  color: #0b4d91;
+  margin-bottom: 20px;
+}
+
+.illustration {
+  width: 100%;
+  max-width: 230px;
+  margin: 10px auto 20px;
+  display: block;
+}
+
+form input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 12px;
+  border: 1.5px solid #ccc;
+  font-size: 16px;
+  transition: border 0.2s ease;
+}
+
+form input:focus {
+  outline: none;
+  border-color: #007BFF;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes bounceIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; visibility: hidden; }
+}
+
+@keyframes moveBg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes slideFadeIn {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* === TEACHER UI === */
+/* --- TEACHER DASHBOARD HEADER --- */
+.teacher-header {
+  text-align: center;
+  background-color: rgb(210, 232, 249);
+  padding: 30px 20px;
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 30px;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.logo-fixed {
+  position: fixed;
+  top: 15px;
+  left: 20px;
+  width: 100px;
+  height: 100;
+  z-index: 99;
+  animation: fadeSlideIn 1s ease;
+}
+
+.teacher-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 25px;
+  margin: 0 auto;
+  max-width: 800px;
+}
+
+.teacher-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 3px solid #0a0d11;
+  object-fit: cover;
+  margin-bottom: 15px;
+  animation: bounceIn 1s ease;
+}
+
+.teacher-title {
+  font-size: 26px;
+  color: #0b4d91;
+  margin-bottom: 15px;
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+.teacher-title span {
+  color: #1d84f2;
+}
+
+.teacher-logo-bottom {
+  width: 100px;
+  margin-top: 10px;
+  animation: fadeInUp 1s ease 1.5s forwards;
+}
+/* Teacher Dashboard Action Cards (Buttons) */
+.action-card {
+  background-color: #0615bb;
+  color: #f5f1f1;
+  font-weight: 60;
+  min-height: 120px;
+  padding: 20px;
+  font-size: 15px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  user-select: none;
+}
+
+.action-card:hover {
+  color: rgb(238, 243, 244);
+  font-size: 180%;
+  box-shadow: 0 12px 25px rgba(57, 178, 209, 0.2);
+}
+
+.teacher-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin: 0 auto;
+  max-width: 900px;
+  padding: 0 15px;
+}
+
+/* Logout button */
+.logout-section {
+  margin-top: 40px;
+  text-align: center;
+  
+}
+
+.logout-btn {
+  background-color: #fbf1f1;
+  color: rgb(233, 20, 20);
+  border: none;
+  padding: 10px 28px;
+  font-size: 20px;
+  border-radius: 50px;
+  size: 20px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+  margin: 0 auto;            
+  display: block;         
+}
+
+
+.logout-btn:hover {
+  background-color: #b71c1c;
+  color: white;}
+/*====generate Qr ====*/
+.generate-container {
+  max-width: 400px;
+  margin: 80px auto;
+  padding: 30px 20px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  animation: slideFadeIn 1s ease;
+}
+
+.form-title {
+  text-align: center;
+  font-size: 24px;
+  color: #0b4d91;
+  margin-bottom: 25px;
+}
+
+.generate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.generate-form input,
+.generate-form select {
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 10px;
+  border: 1.5px solid #ccc;
+  outline: none;
+  transition: border 0.3s ease;
+}
+
+.generate-form input:focus,
+.generate-form select:focus {
+  border-color: #007BFF;
+}
+
+.qr-btn {
+  background-color: #0056b3;
+  color: white;
+  border: none;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.qr-btn:hover {
+  background-color: #003c80;
+}
+.qr-preview {
+  text-align: center;
+  margin-top: 30px;
+  animation: fadeInUp 1s ease;
+}
+
+.qr-preview img {
+  width: 200px;
+  height: 200px;
+  margin: 20px 0;
+  border: 3px solid #0056b3;
+  border-radius: 12px;
+}
+
+.qr-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: center;
+}
+
+.qr-actions .qr-btn {
+  padding: 10px 24px;
+  border-radius: 50px;
+  background-color: #0056b3;
+  color: white;
+  font-size: 16px;
+  border: none;
+  text-decoration: none;
+  transition: background-color 0.3s ease;
+}
+
+.qr-actions .qr-btn:hover {
+  background-color: #003c80;
+}
+
+.back-btn {
+  background-color: #888;
+}
+/*====Student panel */
+.student-container {
+  max-width: 420px;
+  margin: 40px auto;
+  padding: 30px 20px;
+  background: #f5fbff;
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  position: relative;
+}
+
+.student-logo {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 70px;
+}
+
+.student-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 3px solid #0b4d91;
+  object-fit: cover;
+  margin-top: 20px;
+  margin-bottom: 15px;
+  animation: bounceIn 1s ease;
+}
+
+.student-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.student-buttons button {
+  padding: 12px;
+  background-color: #0056b3;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.student-buttons button:hover {
+  background-color: #003c80;
+}
+
+.logout-btn {
+  background-color: #d32f2f;
+  padding: 8px 20px;
+  font-size: 14px;
+  border-radius: 50px;
+  margin-top: 30px;
+}
+
+.logout-btn:hover {
+  background-color: #b71c1c;
+}
+.back-btn {
+  background-color: #057cf4;
+  color: white;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  margin-top: 30px;
+  transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+  background-color: #09366a;
+}
