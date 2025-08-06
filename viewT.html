@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>View Attendance</title>
-  <link rel="stylesheet" href="qr.css" />
+  <link rel="stylesheet" href="./qr.css" />
   <style>
     .view-container {
       max-width: 420px;
@@ -90,7 +90,7 @@
   </style>
 </head>
 <body>
-      <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed">
+      <img src="./images/logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed">
   <div class="view-container">
     <div class="view-header">🔍 View Attendance</div>
 
@@ -126,7 +126,7 @@
   <!-- Student data will be loaded dynamically from backend -->
 </tbody>
 
-    <button class="back-btn" onclick="location.href='teacher.html'">⬅ BACK</button>
+    <button class="back-btn" onclick="location.href='./teacher.html'">⬅ BACK</button>
   </div>
    <script>
   const today = new Date().toISOString().split('T')[0];
