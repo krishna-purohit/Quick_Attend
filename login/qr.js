@@ -6,5 +6,5 @@ window.addEventListener("DOMContentLoaded", () => {
 
     splash.style.display = "none";
     login.classList.add("show");
-  }, 3000); // Waits until animations complete
+  }, 3000); 
 });
