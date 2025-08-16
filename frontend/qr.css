@@ -391,10 +391,13 @@ button:hover {
 }
 
 .student-logo {
-  position: absolute;
-  top: 20px;
+  position: fixed;
+  top: 15px;
   left: 20px;
-  width: 70px;
+  width: 100px;
+  height: 100;
+  z-index: 99;
+  animation: fadeSlideIn 1s ease;
 }
 
 .student-avatar {
