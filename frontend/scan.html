@@ -1,18 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Scan QR - QuickAttend</title>
-  <link rel="stylesheet" href="qr.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickAttend - QR Scan</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f0f4ff, #dce6ff);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+         
+    .container {
+      background: #fff;
+      width: 400px;
+      max-width: 95%;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 15px;
+      color: #2c3e50;
+    }
+
+    #reader {
+      width: 100%;
+      margin-top: 15px;
+      display: none; /* Hidden until button clicked */
+    }
+
+    .btn {
+      background: linear-gradient(45deg, #4a6cf7, #6f85f5);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background: linear-gradient(45deg, #3b5ad6, #5f73e0);
+    }
+
+    .date {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #444;
+    }
+  </style>
 </head>
 <body>
-  <div class="student-container">
-    <img src="logo_qrsystem.png" class="student-logo" />
+  <div class="container">
     <h2>Scan QR to Mark Attendance</h2>
-    <img src="qrscan.png" alt="QR Scanner" style="width: 200px; margin: 20px auto;" />
-    <p>Open your camera or QR scanner app to mark attendance</p>
-<button class="back-btn" onclick="location.href='student.html'">⬅ Back</button>
-  </div>
+
+   <div id="reader"></div>
+     
+    </div>
+
+<script>
+  let scannerStarted = false;
+  let html5QrcodeScanner;
+
+   let rollno= null;
+      window.onload = function () {
+    const user = JSON.parse(sessionStorage.getItem("user"));
+    if (user && user.data) {
+      rollno=user.data.roll_number;
+    }}
+  if (!scannerStarted) {
+    document.getElementById("reader").style.display = "block";
+
+    html5QrcodeScanner = new Html5Qrcode("reader");
+
+    html5QrcodeScanner.start(
+      { facingMode: "environment" }, // back camera
+      { fps: 10, qrbox: 250 },
+      qrCodeMessage => {
+        try {
+          const qrData = JSON.parse(qrCodeMessage); 
+          const sessionId = qrData.session_id;  // ✅ correct name
+          const subjectName = qrData.subject;
+
+          // ✅ Get today's date (yyyy-mm-dd)
+          const todayDate = new Date().toISOString().split("T")[0];
+
+          // ✅ Send attendance to backend
+          fetch("http://127.0.0.1:5000/api/attendance/mark", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              roll_number: rollno,   
+              session_id: sessionId,  // ✅ correct name
+              status: "Present"       
+            })
+          })
+          .then(res => res.json())
+          .then(data => {
+            alert(`✅ Attendance marked for ${subjectName} on ${todayDate}`);
+            html5QrcodeScanner.stop();
+          })
+          .catch(err => alert("Error: " + err));
+        } catch (e) {
+          alert("Invalid QR Code");
+        }
+      },
+      errorMessage => {}
+    );
+
+    scannerStarted = true;
+  }
+</script>
+
 </body>
 </html>

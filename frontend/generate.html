@@ -12,52 +12,119 @@
   <div class="generate-container">
     <h1 class="form-title">Generate Attendance QR</h1>
 
-    <form class="generate-form">
-  <select required>
-    <option value="" disabled selected>Select Class</option>
-    <option>A</option>
-    <option>B</option>
-    <option>C</option>
+    <form class="generate-form" id="qrForm">
+      <select id="classSelect" required>
+        <option value="" disabled selected>Select Class</option>
+        <option>A</option>
+        <option>B</option>
+        <option>C</option>
+      </select>
 
-  </select>
+      <select id="streamSelect" required>
+        <option value="" disabled selected>Select Stream</option>
+        <option>BSc IT</option>
+        <option>BCA</option>
+      </select>
 
-  <select required>
-    <option value="" disabled selected>Select Stream</option>
-    <option>BSc IT</option>
-    <option>BCA</option>
-  </select>
+      <select id="semesterSelect" required>
+        <option value="" disabled selected>Select Semester</option>
+        <option>Sem 1</option>
+        <option>Sem 3</option>
+        <option>Sem 5</option>
+      </select>
 
-  <select required>
-    <option value="" disabled selected>Select Semester</option>
-    <option>Sem 1</option>
-    <option>Sem 3</option>
-    <option>Sem 5</option>
-  </select>
+      <select id="subjectSelect" required>
+        <option value="" disabled selected>Select Subject</option>
+        <option>DSA</option>
+        <option>OS</option>
+        <option>SMM</option>
+        <option>C</option>
+        <option>Python</option>
+        <option>Math</option>
+      </select>
 
-  <select required>
-    <option value="" disabled selected>Select Subject</option>
-    <option>DSA</option>
-    <option>OS</option>
-    <option>SMM</option>
-    <option>C</option>
-    <option>Python</option>
-    <option>Math</option>
-  </select>
+      <input type="text" id="facultyId" readonly placeholder="Faculty ID" />
 
-<input type="text" placeholder="Faculty ID (e.g., T0123)"
-       pattern="T0\d{3}" required
-       title="Faculty ID must start with T0 followed by 3 digits (e.g., T0123)" />
-    <button type="submit" class="qr-btn">Generate QR</button>
+      <button type="submit" class="qr-btn">Generate QR</button>
 
- <div class="qr-preview" id="qrPreview" style="display: none;">
-  <h2>QR Code Generated!</h2>
-  <img id="qrImage" src="" alt="QR Code" />
-  <div class="qr-actions">
-    <a id="downloadBtn" href="#" download="attendance_qr.png" class="qr-btn">Download QR</a>
-    <button onclick="window.location.href='./teacher.html'" class="qr-btn back-btn">Back to Dashboard</button>
+      <div id="loading" style="display:none; margin:10px 0;">
+        <p>Generating QR code...</p>
+      </div>
+
+      <div id="qrPreview" style="display:none; margin-top:20px;">
+        <h3>Generated QR Code:</h3>
+        <img id="qrImage" width="250"><br><br>
+        <a id="downloadBtn" class="qr-btn" download>Download QR</a>
+      </div>
+
+      <div id="errorMsg" style="display:none; color:red; margin-top:10px;"></div>
+    </form>
   </div>
-</div>
-</form>
-  </div>
+
+<script>
+  // ✅ Auto-fill teacher id from login
+  window.onload = function () {
+    const user = JSON.parse(sessionStorage.getItem("user"));
+    if (user && user.data) {
+      document.getElementById("facultyId").value = user.data.username;
+    }
+  };
+
+  document.getElementById("qrForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    // Show loading
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("qrPreview").style.display = "none";
+    document.getElementById("errorMsg").style.display = "none";
+
+    const className = document.getElementById("classSelect").value;
+    const stream = document.getElementById("streamSelect").value;
+    const semester = document.getElementById("semesterSelect").value;
+    const subject = document.getElementById("subjectSelect").value;
+    const facultyId = document.getElementById("facultyId").value;
+
+    const qrData = {
+      class: className,
+      stream: stream,
+      semester: semester,
+      subject: subject,
+      teacher_id: facultyId,
+    };
+
+    try {
+      // ✅ Directly call fetch here
+      const res = await fetch("http://127.0.0.1:5000/api/generate_qr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(qrData),
+      });
+
+      const data = await res.json();
+      console.log("QR generated:", data);
+
+      document.getElementById("loading").style.display = "none";
+
+      if (data.ok) {
+        document.getElementById("qrPreview").style.display = "block";
+        document.getElementById("qrImage").src = data.qr_data_url;
+
+        // ✅ Setup download
+        const link = document.getElementById("downloadBtn");
+        link.href = data.qr_data_url;
+        link.download = `attendance_${subject}_${new Date().toISOString().slice(0, 10)}.png`;
+      } else {
+        document.getElementById("errorMsg").style.display = "block";
+        document.getElementById("errorMsg").textContent = data.error || "Failed to generate QR";
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("errorMsg").style.display = "block";
+      document.getElementById("errorMsg").textContent = "Server error while generating QR";
+    }
+  });
+</script>
+
 </body>
 </html>

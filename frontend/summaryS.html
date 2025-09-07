@@ -5,12 +5,45 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Monthly Report - QuickAttend</title>
   <link rel="stylesheet" href="qr.css" />
+  <style>
+    table {
+      margin: 20px auto;
+      width: 90%;
+      text-align: center;
+      border-collapse: collapse;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      background: white;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+    }
+    th {
+      background: #41a7ef;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+    .low { color: red; font-weight: bold; }
+    .mid { color: orange; font-weight: bold; }
+    .high { color: rgb(8, 245, 8); font-weight: bold; }
+    .student-container {
+      text-align: center;
+      padding: 20px;
+    }
+    .student-logo {
+      width: 100px;
+      margin-bottom: 10px;
+    }
+   
+  </style>
 </head>
 <body>
   <div class="student-container">
     <img src="logo_qrsystem.png" class="student-logo" />
     <h2>📊 Monthly Attendance Report</h2>
-    <table style="margin: 20px auto; width: 90%; text-align: center;">
+    <table>
       <thead>
         <tr>
           <th>Subject</th>
@@ -21,21 +54,55 @@
       </thead>
       <tbody>
         <tr>
-          <td>Java</td>
-          <td>20</td>
-          <td>18</td>
-          <td>90%</td>
+          <td colspan="4">Loading...</td>
         </tr>
-        <tr>
-          <td>DBMS</td>
-          <td>20</td>
-          <td>17</td>
-          <td>85%</td>
-        </tr>
-        <!-- Add more rows based on database -->
       </tbody>
     </table>
-     <button class="back-btn" onclick="location.href='student.html'">⬅ Back</button>
+    <button class="back-btn" onclick="location.href='student.html'">⬅ Back</button>
   </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:5000";
+    const roll = sessionStorage.getItem("roll_no");   // login ke baad store karo
+
+    async function loadMonthlyReport() {
+      const today = new Date();
+      const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+
+      const tbody = document.querySelector("tbody");
+      tbody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+
+      try {
+        const res = await fetch(`${API_BASE}/api/student/${roll}/monthly?month=${month}`);
+        const data = await res.json();
+
+        if (!data.records || data.records.length === 0) {
+          tbody.innerHTML = `<tr><td colspan='4'>No records found for ${month}</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.records.map(r => {
+          let cls = "high";
+          if (r.percentage < 75) cls = "low";
+          else if (r.percentage < 85) cls = "mid";
+
+          return `
+            <tr>
+              <td>${r.subject}</td>
+              <td>${r.total_classes}</td>
+              <td>${r.attended}</td>
+              <td class="${cls}">${r.percentage}%</td>
+            </tr>
+          `;
+        }).join("");
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = "<tr><td colspan='4'>Error loading report</td></tr>";
+      }
+    }
+
+    // call on page load
+    loadMonthlyReport();
+  </script>
 </body>
 </html>
