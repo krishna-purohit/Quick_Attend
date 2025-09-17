@@ -11,7 +11,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 
 # Enable CORS for specific origins
-CORS(app, origins=["http://127.0.0.1:5500", "http://localhost:5500"])
+CORS(app, origins=["http://127.0.0.1:5500"])
 
 # Or for a specific route
 # CORS(app, resources={r"/api/*": {"origins": "http://127.0.0.1:5500"}})
