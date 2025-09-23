@@ -4,28 +4,52 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QuickAttend - Student Dashboard</title>
- <link rel="stylesheet" href="./qr.css" />
+  <link rel="stylesheet" href="./qr.css" />
   <style>
-   
-    h2 {
-      margin: 10px 0;
-      color: #222;
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f9fc;
+      margin: 0;
+      padding: 20px;
     }
 
-    #todayDate {
-      font-weight: bold;
-      font-size: 18px;
-      color: #444;
+    .student-container {
+      max-width: 750px;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .student-logo {
+      display: block;
+      margin: 0 auto 15px;
+      width: 90px;
+    }
+
+    h2 {
+      margin: 10px 0;
+      text-align: center;
+      color: #222;
     }
 
     #rollno {
       display: inline-block;
       margin: 8px 0;
       padding: 6px 14px;
-      background: #f1f3f6;
+      background: #eef2f7;
       border-radius: 8px;
       font-weight: bold;
       color: #222;
+    }
+
+    .date-picker {
+      margin-top: 10px;
+      margin-bottom: 20px;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
     }
 
     table {
@@ -43,7 +67,7 @@
     }
 
     th {
-      background: #5563DE;
+      background: #1976d2; /* blue */
       color: white;
       text-transform: uppercase;
       font-size: 14px;
@@ -64,68 +88,91 @@
       font-weight: bold;
     }
 
-    
+    .back-btn {
+      margin-top: 25px;
+      padding: 10px 20px;
+      background-color: #0091ea;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      transition: background 0.3s ease;
+    }
 
+    .back-btn:hover {
+      background-color: #007acc;
+    }
   </style>
 </head>
 <body>
 <div class="student-container">
     <img src="logo_qrsystem.png" class="student-logo" />
-    <h2>📅 Today's Attendance</h2>
-    <p><span id="todayDate"></span></p>
+    <h2>📅 Attendance</h2>
     <p>Roll No: <span id="rollno"></span></p>
+
+    <!-- Date Picker -->
+    <label for="dateSelect"><b>Select Date:</b></label>
+    <input type="date" id="dateSelect" class="date-picker" />
 
     <div id="attendanceList"></div>
 
     <button class="back-btn" onclick="location.href='./student.html'">⬅ Back</button>
-  </div>
+</div>
+
 <script>
   let studentId = null;
+  let rollno = null;
 
   window.onload = function () {
     const user = JSON.parse(sessionStorage.getItem("user"));
 
     if (user && user.data) {
-      const rollno = user.data.roll_number;
-      studentId = user.data.student_id;   // 🔑 backend se lena hoga jab login hua
-
-      document.getElementById("rollno").textContent = `${rollno} `;
+      rollno = user.data.roll_number;
+      studentId = user.data.student_id;
+      document.getElementById("rollno").textContent = `${rollno}`;
     }
 
-    // ✅ show today’s date
-    const today = new Date();
-    document.getElementById("todayDate").textContent = "Date: " + today.toLocaleDateString();
+    // ✅ set default today date in picker
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("dateSelect").value = today;
 
-    // ✅ load attendance after setting studentId
-    loadAttendance();
+    // Load data
+    loadAttendance(today);
+
+    // When date changes
+    document.getElementById("dateSelect").addEventListener("change", function () {
+      const selectedDate = this.value;
+      loadAttendance(selectedDate);
+    });
   };
 
-  // Backend call
-  async function loadAttendance() {
+  // ✅ Load attendance (subject-wise present/absent)
+  async function loadAttendance(date) {
+    const listBox = document.getElementById("attendanceList");
+    listBox.innerHTML = "<p>⏳ Loading attendance...</p>";
+
     try {
-      const res = await fetch("http://127.0.0.1:5000/api/student/today-attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ student_id: studentId })   // 🔑 ID bhejna hai
-      });
-
+      const res = await fetch(`http://127.0.0.1:5000/api/student/${rollno}/attendance?date=${date}`);
       const data = await res.json();
-      const container = document.getElementById("attendanceList");
-      container.innerHTML = "";
 
-      if (!data || data.length === 0) {
-        container.innerHTML = "<p style='color:red;'>No attendance records for today</p>";
-      } else {
-        data.forEach(record => {
-          const p = document.createElement("p");
-          p.textContent = `${record.subject} → ${record.status}`;
-          p.style.fontWeight = "bold";
-          p.style.color = record.status === "Present" ? "green" : "red";
-          container.appendChild(p);
+      if (data.records && data.records.length > 0) {
+        let html = "<table><tr><th>Subject</th><th>Status</th></tr>";
+        data.records.forEach(r => {
+          const statusClass = r.status === "Present" || r.status === "P" ? "status-present" : "status-absent";
+          html += `<tr><td>${r.subject}</td><td class="${statusClass}">${r.status}</td></tr>`;
         });
+        html += "</table>";
+        listBox.innerHTML = html;
+      } else {
+        listBox.innerHTML = "<p>No records for this date</p>";
       }
     } catch (err) {
-      console.error("Error:", err);
+      console.error(err);
+      listBox.innerHTML = "<p style='color:red;'>Error loading attendance</p>";
     }
   }
 </script>

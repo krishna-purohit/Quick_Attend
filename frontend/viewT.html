@@ -3,34 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>View Attendance</title>
+  <title>View Attendance - QuickAttend</title>
   <link rel="stylesheet" href="./qr.css" />
   <style>
+    body {
+      background: #f9fcff;
+      font-family: Arial, sans-serif;
+    }
+
     .view-container {
-      max-width: 420px;
+      max-width: 700px;
       margin: auto;
-      padding: 30px 20px;
-      background: #f1f9ff;
+      padding: 30px 25px;
+      background: #ffffff;
       border-radius: 20px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-      margin-top: 40px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      margin-top: 50px;
     }
 
     .view-header {
-      font-size: 22px;
+      font-size: 24px;
       font-weight: bold;
       color: #0b4d91;
-      margin-bottom: 25px;
+      margin-bottom: 15px;
       text-align: center;
+    }
+
+    /* ✅ Summary section */
+    .summary {
+      display: none; /* by default hidden */
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .summary span {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 15px;
+      color: #fff;
+    }
+
+    .present-count {
+      background: #4caf50;
+    }
+
+    .absent-count {
+      background: #f44336;
     }
 
     select, input[type="date"] {
       width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
+      padding: 12px;
+      margin-bottom: 18px;
       border-radius: 12px;
       border: 1.5px solid #ccc;
       font-size: 16px;
+      outline: none;
+      transition: border 0.3s;
+    }
+
+    select:focus, input:focus {
+      border: 1.5px solid #0091ea;
+    }
+
+    .load-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #0091ea;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .load-btn:hover {
+      background-color: #0277bd;
     }
 
     .attendance-table {
@@ -41,13 +92,19 @@
 
     .attendance-table th,
     .attendance-table td {
-      padding: 12px 8px;
-      text-align: left;
+      padding: 12px 10px;
+      text-align: center;
       font-size: 15px;
+      border: 1px solid #ddd;
+    }
+
+    .attendance-table th {
+      background-color: #0091ea;
+      color: white;
     }
 
     .attendance-table tr:nth-child(even) {
-      background-color: #e9f4ff;
+      background-color: #f2f9ff;
     }
 
     .status {
@@ -68,9 +125,23 @@
       color: red;
     }
 
+    .action-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      background-color: #ff9800;
+      color: white;
+    }
+
+    .action-btn:hover {
+      background-color: #e68900;
+    }
+
     .back-btn {
       margin-top: 25px;
-      padding: 10px 20px;
+      padding: 12px 25px;
       background-color: #0091ea;
       color: white;
       font-size: 16px;
@@ -82,56 +153,167 @@
       margin-right: auto;
     }
 
-    @media (min-width: 768px) {
-      .view-container {
-        max-width: 600px;
+    .back-btn:hover {
+      background-color: #0277bd;
+    }
+
+    @media (max-width: 600px) {
+      .attendance-table th, .attendance-table td {
+        font-size: 13px;
+        padding: 8px;
       }
     }
   </style>
 </head>
 <body>
-      <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed">
+  <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed">
+
   <div class="view-container">
     <div class="view-header">🔍 View Attendance</div>
 
-    <select name="year" required>
-      <option selected disabled>Select Year</option>
-      <option>First Year</option>
-      <option>Second Year</option>
-      <option>Third Year</option>
+    
+
+    <!-- Dropdowns -->
+    <select id="classSelect" required>
+      <option selected disabled>Select Class</option>
+      <option>A</option>
+      <option>B</option>
     </select>
 
-    <select name="semester" required>
+    <select id="streamSelect" required>
+      <option selected disabled>Select Stream</option>
+      <option>BSc IT</option>
+      <option>BCA</option>
+    </select>
+
+    <select id="semesterSelect" required>
       <option selected disabled>Select Semester</option>
-      <option>3rd Semester</option>
-      <option>5th Semester</option>
+      <option>Sem 1</option>
+      <option>Sem 3</option>
+      <option>Sem 5</option>
     </select>
 
-    <select name="subject" required>
+    <select id="subjectSelect" required>
       <option selected disabled>Select Subject</option>
-      <option>Java Language</option>
-      <option>Python Language</option>
-      <option>Computing Networking</option>
+      <option>Web dev</option>
+      <option>Ai</option>
+      <option>Python</option>
+      <option>DSA</option>
+      <option>OS</option>
+      <option>Math</option>
     </select>
 
-    <select name="course" required>
-      <option selected disabled>Select Course</option>
-      <option>IMCA</option>
-      <option>IMSCIT</option>
-    </select>
-
-    <input type="date" id="todayDate" readonly />
-
-    <tbody id="studentList">
-  <!-- Student data will be loaded dynamically from backend -->
-</tbody>
+    <input type="date" id="todayDate" />
+ 
+    <!-- Load Button -->
+    <button class="load-btn" onclick="loadAttendance()">📋 Load Attendance</button>
+     <!-- ✅ Summary Counts -->
+    <div class="summary" id="summaryBox">
+      <span class="present-count">Present: <span id="presentCount">0</span></span>
+      <span class="absent-count">Absent: <span id="absentCount">0</span></span>
+    </div>
+    <!-- Table -->
+    <table class="attendance-table">
+      <thead>
+        <tr>
+          <th>Roll No</th>
+          <th>Name</th>
+          <th>Subject</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="studentList">
+        <tr>
+          <td colspan="5">No data loaded</td>
+        </tr>
+      </tbody>
+    </table>
 
     <button class="back-btn" onclick="location.href='./teacher.html'">⬅ BACK</button>
   </div>
-   <script>
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById("todayDate").value = today;
-</script>
+  <script>
+ 
+    // ✅ set default date = today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById("todayDate").value = today;
 
+    // ✅ API se data laane ka function
+    async function loadAttendance() {
+      const className = document.getElementById("classSelect").value;
+      const stream = document.getElementById("streamSelect").value;
+      const semester = document.getElementById("semesterSelect").value;
+      const subject = document.getElementById("subjectSelect").value;
+      const date = document.getElementById("todayDate").value;
+
+      if (!className || !stream || !semester || !subject) {
+        alert("⚠ Please select all filters before loading attendance.");
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `http://127.0.0.1:5000/api/get_attendance?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}&date=${date}`
+        );
+        const data = await res.json();
+
+        const tbody = document.getElementById("studentList");
+        tbody.innerHTML = "";
+
+        let presentCount = 0, absentCount = 0;
+
+        if (data.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5">No records found</td></tr>`;
+          document.getElementById("presentCount").innerText = 0;
+          document.getElementById("absentCount").innerText = 0;
+          document.getElementById("summaryBox").style.display = "none";
+          return;
+        }
+
+        data.forEach(s => {
+          if (s.status.toLowerCase() === "present" || s.status.toLowerCase() === "p") presentCount++;
+          else absentCount++;
+
+          tbody.innerHTML += `
+            <tr>
+              <td>${s.roll_no}</td>
+              <td>${s.name}</td>
+              <td>${subject}</td>
+              <td><span class="status ${s.status.toLowerCase()}">${s.status}</span></td>
+              <td>
+                <button class="action-btn" onclick="toggleAttendance('${s.roll_no}','${date}','${subject}')">Toggle</button>
+              </td>
+            </tr>
+          `;
+        });
+
+        // ✅ update counts & show summary
+        document.getElementById("presentCount").innerText = presentCount;
+        document.getElementById("absentCount").innerText = absentCount;
+        document.getElementById("summaryBox").style.display = "flex";
+
+      } catch (err) {
+        console.error("Error fetching attendance:", err);
+        alert("❌ Failed to load attendance from server.");
+      }
+    }
+
+    // ✅ Toggle attendance API call
+    async function toggleAttendance(roll_no, date, subject) {
+      try {
+        const res = await fetch("http://127.0.0.1:5000/api/update_attendance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roll_no, date, subject })
+        });
+        const result = await res.json();
+        alert(result.message);
+        loadAttendance(); // refresh table
+      } catch (err) {
+        console.error("Error updating:", err);
+        alert("❌ Failed to update attendance.");
+      }
+    }
+  </script>
 </body>
 </html>

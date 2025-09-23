@@ -16,7 +16,6 @@
       align-items: center;
       height: 100vh;
     }
-         
     .container {
       background: #fff;
       width: 400px;
@@ -26,102 +25,109 @@
       box-shadow: 0 6px 18px rgba(0,0,0,0.1);
       text-align: center;
     }
-
-    h2 {
-      margin-bottom: 15px;
-      color: #2c3e50;
-    }
-
-    #reader {
-      width: 100%;
-      margin-top: 15px;
-      display: none; /* Hidden until button clicked */
-    }
-
+    h2 { margin-bottom: 15px; color: #2c3e50; }
+    #reader { width: 100%; margin-top: 15px; display: none; }
     .btn {
       background: linear-gradient(45deg, #4a6cf7, #6f85f5);
-      color: white;
-      border: none;
-      padding: 12px 20px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 16px;
-      margin-top: 10px;
-      transition: 0.3s;
+      color: white; border: none; padding: 12px 20px;
+      border-radius: 10px; cursor: pointer; font-size: 16px;
+      margin-top: 10px; transition: 0.3s;
     }
-
-    .btn:hover {
-      background: linear-gradient(45deg, #3b5ad6, #5f73e0);
-    }
-
-    .date {
-      margin-top: 20px;
-      font-weight: bold;
-      color: #444;
-    }
+    .btn:hover { background: linear-gradient(45deg, #3b5ad6, #5f73e0); }
+    .date { margin-top: 20px; font-weight: bold; color: #444; }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Scan QR to Mark Attendance</h2>
-
-   <div id="reader"></div>
-     
-    </div>
+    <div id="reader"></div>
+  </div>
 
 <script>
   let scannerStarted = false;
   let html5QrcodeScanner;
+  let rollno = null;
 
-   let rollno= null;
-      window.onload = function () {
+  window.onload = function () {
     const user = JSON.parse(sessionStorage.getItem("user"));
     if (user && user.data) {
-      rollno=user.data.roll_number;
-    }}
-  if (!scannerStarted) {
-    document.getElementById("reader").style.display = "block";
+      rollno = user.data.roll_number;
+    }
 
-    html5QrcodeScanner = new Html5Qrcode("reader");
+    if (!scannerStarted) {
+      document.getElementById("reader").style.display = "block";
+      html5QrcodeScanner = new Html5Qrcode("reader");
 
-    html5QrcodeScanner.start(
-      { facingMode: "environment" }, // back camera
-      { fps: 10, qrbox: 250 },
-      qrCodeMessage => {
-        try {
-          const qrData = JSON.parse(qrCodeMessage); 
-          const sessionId = qrData.session_id;  // ✅ correct name
-          const subjectName = qrData.subject;
+      html5QrcodeScanner.start(
+        { facingMode: "environment" }, // back camera
+        { fps: 10, qrbox: 250 },
+        async qrCodeMessage => {
+          try {
+            const qrData = JSON.parse(qrCodeMessage);
+            const sessionId = qrData.session_id;
+            const subjectName = qrData.subject;
 
-          // ✅ Get today's date (yyyy-mm-dd)
-          const todayDate = new Date().toISOString().split("T")[0];
+            // call backend with helper
+            const resp = await sendMarkAttendance(rollno, sessionId, "Present");
 
-          // ✅ Send attendance to backend
-          fetch("http://127.0.0.1:5000/api/attendance/mark", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              roll_number: rollno,   
-              session_id: sessionId,  // ✅ correct name
-              status: "Present"       
-            })
-          })
-          .then(res => res.json())
-          .then(data => {
-            alert(`✅ Attendance marked for ${subjectName} on ${todayDate}`);
-            html5QrcodeScanner.stop();
-          })
-          .catch(err => alert("Error: " + err));
-        } catch (e) {
-          alert("Invalid QR Code");
+            if (resp.ok) {
+              if (resp.already_marked) {
+                showToast(`⚠️ Already marked for ${subjectName}`);
+              } else {
+                const todayDate = new Date().toISOString().split("T")[0];
+                showToast(`✅ Attendance marked for ${subjectName} on ${todayDate}`);
+              }
+              // optional: stop scanner after one valid scan
+              html5QrcodeScanner.stop();
+            }
+          } catch (e) {
+            showToast("Invalid QR Code");
+          }
+        },
+        errorMessage => {}
+      );
+
+      scannerStarted = true;
+    }
+  };
+
+  async function sendMarkAttendance(roll_number, session_id, status = "Present") {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/api/attendance/mark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roll_number, session_id, status })
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        console.error("Server returned non-200:", res.status, json);
+        showToast("Server error. Check console.");
+        return { ok: false, reason: "server", payload: json };
+      }
+
+      if (json.ok) {
+        if (json.already_marked) {
+          return { ok: true, already_marked: true, payload: json };
+        } else {
+          return { ok: true, already_marked: false, payload: json };
         }
-      },
-      errorMessage => {}
-    );
+      } else {
+        showToast(json.message || "Could not mark attendance");
+        return { ok: false, reason: "application", payload: json };
+      }
 
-    scannerStarted = true;
+    } catch (err) {
+      console.error("Network/Fetch error:", err);
+      showToast("Network error. Try again.");
+      return { ok: false, reason: "network", error: err };
+    }
+  }
+
+  function showToast(msg) {
+    alert(msg); // replace with a toast/snackbar if you have UI
   }
 </script>
-
 </body>
 </html>

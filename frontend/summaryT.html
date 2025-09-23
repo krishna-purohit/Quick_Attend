@@ -2,65 +2,74 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Attendance Summary</title>
-  <link rel="stylesheet" href="qr.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📊 Attendance Summary Report</title>
+  <link rel="stylesheet" href="./qr.css" />
   <style>
-    .summary-container {
-      max-width: 500px;
-      margin: 40px auto;
-      padding: 30px 20px;
-      background: #f1f9ff;
-      border-radius: 20px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    body {
+      background: #f9fcff;
+      font-family: Arial, sans-serif;
     }
 
-    .summary-header {
-      font-size: 22px;
+    .view-container {
+      max-width: 650px;
+      margin: auto;
+      padding: 30px 25px;
+      background: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      margin-top: 50px;
+    }
+
+    .view-header {
+      font-size: 24px;
       font-weight: bold;
       color: #0b4d91;
-      text-align: center;
       margin-bottom: 25px;
+      text-align: center;
     }
 
-    select {
+    select, input[type="date"] {
       width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
+      padding: 12px;
+      margin-bottom: 18px;
       border-radius: 12px;
       border: 1.5px solid #ccc;
       font-size: 16px;
+      outline: none;
+      transition: border 0.3s;
     }
 
-    .summary-table {
+    select:focus, input:focus {
+      border: 1.5px solid #0091ea;
+    }
+
+    .attendance-table {
       width: 100%;
-      border-collapse: collapse;
       margin-top: 20px;
+      border-collapse: collapse;
     }
 
-    .summary-table th,
-    .summary-table td {
-      padding: 10px;
-      text-align: left;
+    .attendance-table th,
+    .attendance-table td {
+      padding: 12px 10px;
+      text-align: center;
       font-size: 15px;
+      border: 1px solid #ddd;
     }
 
-    .summary-table th {
-      background-color: #d0e7ff;
-      color: #003c80;
+    .attendance-table th {
+      background-color: #0091ea;
+      color: white;
     }
 
-    .summary-table tr:nth-child(even) {
-      background-color: #eef6ff;
-    }
-
-    .percent {
-      font-weight: bold;
+    .attendance-table tr:nth-child(even) {
+      background-color: #f2f9ff;
     }
 
     .back-btn {
       margin-top: 25px;
-      padding: 10px 20px;
+      padding: 12px 25px;
       background-color: #0091ea;
       color: white;
       font-size: 16px;
@@ -72,48 +81,55 @@
       margin-right: auto;
     }
 
-    @media (min-width: 768px) {
-      .summary-container {
-        max-width: 700px;
+    .back-btn:hover {
+      background-color: #0277bd;
+    }
+
+    @media (max-width: 600px) {
+      .attendance-table th, .attendance-table td {
+        font-size: 13px;
+        padding: 8px;
       }
     }
   </style>
 </head>
 <body>
-         <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed">
+  <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed">
 
-  <div class="summary-container">
-    <div class="summary-header">📊 Attendance Summary Report</div>
+  <div class="view-container">
+    <div class="view-header">📊 Attendance Summary Report</div>
 
-    <select>
-      <option selected disabled>Select Year</option>
-      <option>First Year</option>
-      <option>Second Year</option>
-      <option>Third Year</option>
-    </select>
-
-    <select>
-      <option selected disabled>Select Semester</option>
-      <option>1st Semester</option>
-      <option>2rd Semester</option>
-      <option>3th Semester</option>
-    </select>
-
-    <select>
-      <option selected disabled>Select Subject</option>
-      <option>Java</option>
-      <option>DBMS</option>
-      <option>CN</option>
-      <option>OS</option>
-    </select>
-
-    <select>
-      <option selected disabled>Select Course</option>
+    <!-- Dropdowns -->
+    <select id="streamSelect" required>
+      <option selected disabled>Select Stream</option>
+      <option>BSc IT</option>
       <option>BCA</option>
-      <option>BSCIT</option>
     </select>
 
-    <table class="summary-table">
+    <select id="yearSelect" required>
+      <option selected disabled>Select Class</option>
+      <option>A</option>
+      <option>B</option>
+    </select>
+
+    <select id="semesterSelect" required>
+      <option selected disabled>Select Semester</option>      
+      <option>Sem 1</option>
+      <option>Sem 3</option>
+      <option>Sem 5</option>
+    </select>
+
+    <select id="subjectSelect" required>
+      <option selected disabled>Select Subject</option>
+      <option>Web dev</option>
+      <option>Ai</option>
+      <option>Python</option>
+      <option>DSA</option>
+      <option>C</option>
+      <option>Math</option>
+    </select>
+    <!-- Table -->
+    <table class="attendance-table">
       <thead>
         <tr>
           <th>Roll No</th>
@@ -121,22 +137,65 @@
           <th>Attendance %</th>
         </tr>
       </thead>
-      <tbody id="summaryData">
-        <!-- Sample rows (will come from backend) -->
+      <tbody id="summaryList">
         <tr>
-          <td>1</td>
-          <td>Krishna Rajpurohit</td>
-          <td class="percent">88%</td>
-        </tr>
-        <tr>
-          <td>2</td>
-          <td>Hiren Bhatt</td>
-          <td class="percent">92%</td>
+          <td colspan="3">No data loaded</td>
         </tr>
       </tbody>
     </table>
 
     <button class="back-btn" onclick="location.href='./teacher.html'">⬅ BACK</button>
   </div>
+
+<script>
+  // 🔄 Auto-load when any dropdown changes
+  document.querySelectorAll("#streamSelect, #yearSelect, #semesterSelect, #subjectSelect")
+    .forEach(select => {
+      select.addEventListener("change", loadSummary);
+    });
+
+  async function loadSummary() {
+  const stream = document.getElementById("streamSelect").value;
+  const className = document.getElementById("yearSelect").value;  
+  const semester = document.getElementById("semesterSelect").value;
+  const subject = document.getElementById("subjectSelect").value;
+
+  // Agar koi dropdown abhi select nahi hua → return
+  if (!stream || !className || !semester || !subject) return;
+
+  try {
+    // Date ko hata diya → backend default today lega
+    const res = await fetch(
+      `http://127.0.0.1:5000/api/teacher/summary?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}`
+    );
+
+    const data = await res.json();
+    console.log("Summary Data:", data);
+
+    const tbody = document.getElementById("summaryList");
+    tbody.innerHTML = "";
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3">No records found</td></tr>`;
+      return;
+    }
+
+    data.forEach(s => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${s.roll_no}</td>
+          <td>${s.name}</td>
+          <td>${s.attendance_percentage}% (${s.attended}/${s.total_classes})</td>
+        </tr>
+      `;
+    });
+  } catch (err) {
+    console.error("❌ Error fetching summary:", err);
+    alert("Failed to load summary. Check console for details.");
+  }
+}
+
+</script>
+
 </body>
 </html>

@@ -11,10 +11,8 @@ from flask_cors import CORS
 app = Flask(__name__)
 
 # Enable CORS for specific origins
-CORS(app, origins=["http://127.0.0.1:5500"])
+CORS(app)
 
-# Or for a specific route
-# CORS(app, resources={r"/api/*": {"origins": "http://127.0.0.1:5500"}})
 # ✅ MySQL connection function
 def get_db_connection():
     return mysql.connector.connect(
@@ -171,53 +169,114 @@ def generate_qr():
 def mark_attendance():
     data = request.get_json()
     roll_number = data.get("roll_number")
-    session_id = data.get("session_id") 
+    session_id = data.get("session_id")
     status = data.get("status", "Present")
 
     if not roll_number or not session_id:
-        return jsonify({"error": "Missing roll_number or session_id"}), 400
+        return jsonify({"ok": False, "error": "Missing roll_number or session_id"}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # 1️⃣ roll_number → student_id
+        # 1) get student_id from roll
         cursor.execute("SELECT student_id FROM student WHERE roll_number=%s", (roll_number,))
         student = cursor.fetchone()
         if not student:
-            return jsonify({"error": "Invalid roll number"}), 400
-
+            return jsonify({"ok": False, "error": "Invalid roll number"}), 400
         student_id = student["student_id"]
 
-        # 2️⃣ check if already marked
+        # 2) check if already marked for this session and student
         cursor.execute(
-            "SELECT 1 FROM attendance WHERE student_id=%s AND session_id=%s",
+            "SELECT attendance_id, status FROM attendance WHERE student_id=%s AND session_id=%s",
             (student_id, session_id)
         )
-        if cursor.fetchone():
-            return jsonify({"ok": False, "message": "Attendance already marked"}), 400
+        existing = cursor.fetchone()
 
-        # 3️⃣ insert attendance
+        if existing:
+            # attendance exists in DB — return success but mark flag so frontend can show "Already marked"
+            cursor.close()
+            conn.close()
+            return jsonify({
+                "ok": True,
+                "already_marked": True,
+                "student_id": student_id,
+                "attendance_id": existing.get("attendance_id"),
+                "status": existing.get("status"),
+                "message": "Attendance already marked for this session"
+            }), 200
+
+        # 3) insert attendance
         cursor.execute(
             "INSERT INTO attendance (student_id, session_id, status) VALUES (%s, %s, %s)",
             (student_id, session_id, status)
         )
         conn.commit()
+        attendance_id = cursor.lastrowid
 
-        # ✅ return student_id instead of roll_number
+        cursor.close()
+        conn.close()
+
         return jsonify({
             "ok": True,
+            "already_marked": False,
             "student_id": student_id,
-            "message": f"Attendance marked for student_id {student_id}"
-        })
+            "attendance_id": attendance_id,
+            "message": "Attendance marked successfully"
+        }), 200
 
     except Exception as e:
         conn.rollback()
-        print("Error:", e)
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
+        # log on server
+        print("Error in mark_attendance:", str(e))
+        try:
+            cursor.close()
+        except:
+            pass
+        try:
+            conn.close()
+        except:
+            pass
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+#-------------
+# update attendace by teacher
+#--------------
+@app.route("/api/update_attendance", methods=["POST"])
+def update_attendance():
+    data = request.get_json()
+    roll_no = data.get("roll_no")
+    date = data.get("date")
+    subject = data.get("subject")
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    # 1. find current status
+    cur.execute("""
+        SELECT a.status, a.attendance_id
+        FROM attendance a
+        JOIN student s ON s.student_id = a.student_id
+        JOIN qrsession q ON a.session_id = q.session_id
+        WHERE s.roll_number=%s AND q.date=%s AND q.subject=%s
+    """, (roll_no, date, subject))
+    row = cur.fetchone()
+
+    if not row:
+        cur.close()
         conn.close()
+        return jsonify({"status": "error", "message": "Attendance record not found"}), 404
+
+    current_status = row["status"]
+    new_status = "Absent" if current_status in ("P","Present") else "Present"
+
+    # 2. update status
+    cur.execute("UPDATE attendance SET status=%s WHERE attendance_id=%s", (new_status, row["attendance_id"]))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return jsonify({"status": "success", "message": f"Updated to {new_status}"})
 
 #-------------
 # view today for student
@@ -268,8 +327,9 @@ def student_today_attendance():
         return jsonify({"error": str(e)}), 500
 
 # ------------- 
-# Summary for Student 
+# TS-Summary for Student 
 # -------------------
+# ---------- Student: Monthly Attendance ----------
 @app.route("/api/student/<roll>/monthly", methods=["GET"])
 def student_monthly_report(roll):
     # month format YYYY-MM
@@ -302,7 +362,7 @@ def student_monthly_report(roll):
         for r in rows:
             total = int(r["total_classes"]) or 0
             att = int(r["attended"]) or 0
-            r["percentage"] = round((att/total)*100) if total else 0
+            r["percentage"] = round((att / total) * 100, 2) if total else 0
 
         cur.close()
         cnx.close()
@@ -315,9 +375,282 @@ def student_monthly_report(roll):
     except Exception as e:
         print("ERR:", e)
         return jsonify({"error": str(e)}), 500
+# ----------------------------
+# TS -Student Overall Attendance Summary (by roll number)
+# ----------------------------
+@app.route("/api/student/<roll>/summary", methods=["GET"])
+def student_summary(roll):
+    """
+    Returns subject-wise attendance summary for a student by roll number
+    """
+    month = request.args.get("month")
+    if not month:
+        month = dt.date.today().strftime("%Y-%m")
+
+    query = """
+        SELECT 
+            q.subject AS subject,
+            COUNT(*) AS total_classes,
+            SUM(CASE WHEN a.status IN ('P','Present') THEN 1 ELSE 0 END) AS attended
+        FROM qrsession q
+        LEFT JOIN attendance a 
+            ON q.session_id = a.session_id
+        LEFT JOIN student s
+            ON a.student_id = s.student_id
+        WHERE s.roll_number = %s
+          AND DATE_FORMAT(q.date, '%%Y-%%m') = %s
+        GROUP BY q.subject
+        ORDER BY q.subject;
+    """
+
+    try:
+        cnx = get_db_connection()
+        cur = cnx.cursor(dictionary=True)
+        cur.execute(query, (roll, month))
+        rows = cur.fetchall()
+
+        for r in rows:
+            total = int(r["total_classes"]) or 0
+            att = int(r["attended"]) or 0
+            r["percentage"] = round((att / total) * 100, 2) if total else 0
+
+        cur.close()
+        cnx.close()
+
+        return jsonify({
+            "roll": roll,
+            "month": month,
+            "records": rows
+        }), 200
+
+    except Exception as e:
+        print("ERR:", e)
+        return jsonify({"error": str(e)}), 500
+
+# ---------- Dropdown APIs ----------
+@app.route("/api/get_classes")
+def get_classes():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT DISTINCT class_name FROM classes;")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify([r[0] for r in rows])
+
+@app.route("/api/get_streams")
+def get_streams():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT DISTINCT stream_name FROM streams;")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify([r[0] for r in rows])
+
+@app.route("/api/get_semesters")
+def get_semesters():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT DISTINCT semester_name FROM semesters;")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify([r[0] for r in rows])
+
+@app.route("/api/get_subjects")
+def get_subjects():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT DISTINCT subject_name FROM subjects;")
+    rows = cur.fetchall()
+    conn.close()
+    return jsonify([r[0] for r in rows])
+
+# ---------- Attendance API ----------
+@app.route("/api/get_attendance")
+def get_attendance():
+    class_name = request.args.get("class")
+    stream = request.args.get("stream")
+    semester = request.args.get("semester")
+    subject = request.args.get("subject")  # optional
+    date = request.args.get("date")
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    # optional subject filter
+    subject_filter = ""
+    params = []
+
+    # Query
+    query = f"""
+        SELECT s.roll_number, s.name, COALESCE(a.status,'Absent') AS status
+        FROM student s
+        JOIN qrsession q
+            ON LOWER(TRIM(REPLACE(s.class,' ',''))) = LOWER(TRIM(REPLACE(q.class,' ','')))
+            AND LOWER(TRIM(REPLACE(s.stream,' ',''))) = LOWER(TRIM(REPLACE(q.stream,' ','')))
+            AND LOWER(TRIM(REPLACE(s.semester,'Sem ',''))) = LOWER(TRIM(REPLACE(q.semester,'Sem ','')))
+            AND DATE(q.date) = %s
+        LEFT JOIN attendance a
+            ON a.student_id = s.student_id AND a.session_id = q.session_id
+        WHERE LOWER(TRIM(REPLACE(s.class,' ',''))) = LOWER(TRIM(REPLACE(%s,' ','')))
+          AND LOWER(TRIM(REPLACE(s.stream,' ',''))) = LOWER(TRIM(REPLACE(%s,' ','')))
+          AND LOWER(TRIM(REPLACE(s.semester,'Sem ',''))) = LOWER(TRIM(REPLACE(%s,'Sem ','')))
+        ORDER BY s.roll_number;
+    """
+
+    # Params order: subject(if exists), date, class, stream, semester
+    params = params + [date, class_name, stream, semester]
+
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    data = [{"roll_no": r["roll_number"], "name": r["name"], "status": r["status"]} for r in rows]
+
+    return jsonify(data)
+
+# ----------------------------
+# Teacher Summary API
+# ----------------------------
+@app.route("/api/teacher/summary")
+def teacher_summary():
+    from datetime import date as dt
+    # -----------------------------
+    # Get query params
+    # -----------------------------
+    class_name = request.args.get("class")
+    stream = request.args.get("stream")
+    semester = request.args.get("semester")
+    subject = request.args.get("subject")  # optional
+    date_param = request.args.get("date")
+
+    # Default: today
+    if not date_param:
+        # inside /api/teacher/summary
+        date_param = "2025-09-03"  # hardcoded instead of dt.today()
+
+
+    # -----------------------------
+    # DB connection
+    # -----------------------------
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    # -----------------------------
+    # Prepare subject filter
+    # -----------------------------
+    subject_filter = ""
+    params = []
+
+    if subject:
+        subject_filter = "AND LOWER(TRIM(q.subject)) = LOWER(TRIM(%s))"
+        params.append(subject)
+
+    # Add date, class, stream, semester params
+    params = [date_param] + params + [class_name, stream, semester]
+
+    # -----------------------------
+    # SQL query
+    # -----------------------------
+    query = f"""
+    SELECT 
+        s.roll_number,
+        s.name,
+        COUNT(q.session_id) AS total_classes,
+        SUM(CASE WHEN a.status IN ('P','Present') THEN 1 ELSE 0 END) AS attended
+    FROM student s
+    JOIN qrsession q
+        ON LOWER(TRIM(REPLACE(s.class,' ',''))) = LOWER(TRIM(REPLACE(q.class,' ','')))
+        AND LOWER(TRIM(REPLACE(s.stream,' ',''))) = LOWER(TRIM(REPLACE(q.stream,' ','')))
+        AND LOWER(TRIM(REPLACE(s.semester,'Sem ',''))) = LOWER(TRIM(REPLACE(q.semester,'Sem ','')))
+        AND DATE(q.date) = %s
+        {subject_filter}
+    LEFT JOIN attendance a
+        ON a.student_id = s.student_id
+        AND a.session_id = q.session_id
+    WHERE LOWER(TRIM(REPLACE(s.class,' ',''))) = LOWER(TRIM(REPLACE(%s,' ','')))
+      AND LOWER(TRIM(REPLACE(s.stream,' ',''))) = LOWER(TRIM(REPLACE(%s,' ','')))
+      AND LOWER(TRIM(REPLACE(s.semester,'Sem ',''))) = LOWER(TRIM(REPLACE(%s,'Sem ','')))
+    GROUP BY s.student_id, s.roll_number, s.name
+    ORDER BY s.roll_number;
+    """
+
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    # -----------------------------
+    # Format data
+    # -----------------------------
+    data = []
+    for r in rows:
+        total = r["total_classes"] or 0
+        attended = r["attended"] or 0
+        percentage = round((attended / total) * 100, 2) if total > 0 else 0.0
+        data.append({
+            "roll_no": r["roll_number"],
+            "name": r["name"],
+            "total_classes": total,
+            "attended": attended,
+            "attendance_percentage": percentage
+        })
+
+    return jsonify(data)
+
+#---------------------
+# SS - date wise attendnce
+#---------------------
+
+@app.route("/api/student/<roll>/attendance", methods=["GET"])
+def student_attendance_by_date(roll):
+    """
+    Returns attendance records of a student by roll number for a given date
+    Default: today
+    """
+    date = request.args.get("date")
+    if not date:
+        date = dt.date.today().strftime("%Y-%m-%d")
+
+    query = """
+        SELECT 
+            q.subject AS subject,
+            COALESCE(a.status, 'Absent') AS status
+        FROM qrsession q
+        LEFT JOIN attendance a 
+            ON q.session_id = a.session_id
+        LEFT JOIN student s
+            ON a.student_id = s.student_id
+        WHERE s.roll_number = %s
+          AND q.date = %s
+        ORDER BY q.subject;
+    """
+
+    try:
+        cnx = get_db_connection()
+        cur = cnx.cursor(dictionary=True)
+        cur.execute(query, (roll, date))
+        rows = cur.fetchall()
+        cur.close()
+        cnx.close()
+
+        return jsonify({
+            "roll": roll,
+            "date": date,
+            "records": rows
+        }), 200
+
+    except Exception as e:
+        print("ERR:", e)
+        return jsonify({"error": str(e)}), 500
+
+
+#---------------------
+# SS -sub wise percentage 
+#---------------------
 
 # ----------------------------
 # Run Flask
 # ----------------------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True) 
