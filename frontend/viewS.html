@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuickAttend - Student Dashboard</title>
-  <link rel="stylesheet" href="./qr.css" />
+  <title>QuickAttend - Today Attendance</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -22,15 +21,9 @@
       box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
     }
 
-    .student-logo {
-      display: block;
-      margin: 0 auto 15px;
-      width: 90px;
-    }
-
     h2 {
-      margin: 10px 0;
       text-align: center;
+      margin-bottom: 15px;
       color: #222;
     }
 
@@ -45,8 +38,7 @@
     }
 
     .date-picker {
-      margin-top: 10px;
-      margin-bottom: 20px;
+      margin: 15px 0;
       padding: 6px;
       border-radius: 6px;
       border: 1px solid #ccc;
@@ -67,7 +59,7 @@
     }
 
     th {
-      background: #1976d2; /* blue */
+      background: #1976d2;
       color: white;
       text-transform: uppercase;
       font-size: 14px;
@@ -110,69 +102,67 @@
 </head>
 <body>
 <div class="student-container">
-    <img src="logo_qrsystem.png" class="student-logo" />
-    <h2>📅 Attendance</h2>
+    <h2>📅 Student - Today’s Attendance</h2>
     <p>Roll No: <span id="rollno"></span></p>
 
     <!-- Date Picker -->
-    <label for="dateSelect"><b>Select Date:</b></label>
+    <label for="dateSelect">Choose Date: </label>
     <input type="date" id="dateSelect" class="date-picker" />
 
-    <div id="attendanceList"></div>
+    <!-- Today’s Attendance -->
+    <div id="todayAttendance"></div>
 
     <button class="back-btn" onclick="location.href='./student.html'">⬅ Back</button>
 </div>
-
 <script>
-  let studentId = null;
   let rollno = null;
 
   window.onload = function () {
     const user = JSON.parse(sessionStorage.getItem("user"));
-
     if (user && user.data) {
       rollno = user.data.roll_number;
-      studentId = user.data.student_id;
-      document.getElementById("rollno").textContent = `${rollno}`;
+      document.getElementById("rollno").textContent = rollno;
     }
 
-    // ✅ set default today date in picker
+    // ✅ By default today’s date set karo
     const today = new Date().toISOString().split("T")[0];
     document.getElementById("dateSelect").value = today;
 
-    // Load data
-    loadAttendance(today);
+    // Pehle default load karo
+    loadTodayAttendance(today);
 
-    // When date changes
-    document.getElementById("dateSelect").addEventListener("change", function () {
-      const selectedDate = this.value;
-      loadAttendance(selectedDate);
+    // ✅ Jab date change ho to reload
+    document.getElementById("dateSelect").addEventListener("change", function() {
+      loadTodayAttendance(this.value);
     });
   };
 
-  // ✅ Load attendance (subject-wise present/absent)
-  async function loadAttendance(date) {
-    const listBox = document.getElementById("attendanceList");
-    listBox.innerHTML = "<p>⏳ Loading attendance...</p>";
+  // ✅ Load Attendance by date (NEW API)
+  async function loadTodayAttendance(date) {
+    const box = document.getElementById("todayAttendance");
+    box.innerHTML = "<p>⏳ Loading...</p>";
 
     try {
       const res = await fetch(`http://127.0.0.1:5000/api/student/${rollno}/attendance?date=${date}`);
       const data = await res.json();
 
-      if (data.records && data.records.length > 0) {
+      if (data && data.records && data.records.length > 0) {
         let html = "<table><tr><th>Subject</th><th>Status</th></tr>";
         data.records.forEach(r => {
-          const statusClass = r.status === "Present" || r.status === "P" ? "status-present" : "status-absent";
-          html += `<tr><td>${r.subject}</td><td class="${statusClass}">${r.status}</td></tr>`;
+          const statusClass =
+            r.status === "P" || r.status === "Present"
+              ? "status-present"
+              : "status-absent";
+          html += `<tr><td>${r.subject}</td><td class="${statusClass}">${r.status || "Absent"}</td></tr>`;
         });
         html += "</table>";
-        listBox.innerHTML = html;
+        box.innerHTML = html;
       } else {
-        listBox.innerHTML = "<p>No records for this date</p>";
+        box.innerHTML = "<p>No classes on this date</p>";
       }
     } catch (err) {
       console.error(err);
-      listBox.innerHTML = "<p style='color:red;'>Error loading attendance</p>";
+      box.innerHTML = "<p style='color:red;'>Error fetching attendance</p>";
     }
   }
 </script>

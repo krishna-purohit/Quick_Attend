@@ -278,103 +278,6 @@ def update_attendance():
 
     return jsonify({"status": "success", "message": f"Updated to {new_status}"})
 
-#-------------
-# view today for student
-#--------------
-@app.post("/api/student/today-attendance")
-def student_today_attendance():
-    data = request.get_json()
-    student_id = data.get("student_id")
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    try:
-        today = datetime.today().date()
-
-        # 1️⃣ Student ka stream, semester, class nikaalo
-        cursor.execute("SELECT class,stream, semester FROM student WHERE student_id=%s", (student_id,))
-        student = cursor.fetchone()
-        if not student:
-            return jsonify({"error": "Student not found"}), 404
-
-        stream = student["stream"]
-        semester = student["semester"]
-        class_name = student["class"]
-
-        # 2️⃣ Filtered query
-        cursor.execute("""
-    SELECT q.session_id, q.subject, q.date,
-           IF(a.attendance_id IS NULL, 'Present', a.status) AS status
-    FROM qrsession q
-    LEFT JOIN attendance a 
-      ON q.session_id = a.session_id AND a.student_id = %s
-    WHERE q.date = %s 
-      AND LOWER(REPLACE(q.stream, ' ', '')) = LOWER(REPLACE(%s, ' ', ''))
-      AND q.semester = %s 
-      AND q.class = %s
-""", (student_id, today, stream, semester, class_name))
-       
-        records = cursor.fetchall()
-
-        cursor.close()
-        conn.close()
-        return jsonify(records)
-
-    except Exception as e:
-        cursor.close()
-        conn.close()
-        return jsonify({"error": str(e)}), 500
-
-# ------------- 
-# TS-Summary for Student 
-# -------------------
-# ---------- Student: Monthly Attendance ----------
-@app.route("/api/student/<roll>/monthly", methods=["GET"])
-def student_monthly_report(roll):
-    # month format YYYY-MM
-    month = request.args.get("month")
-    if not month:
-        month = dt.date.today().strftime("%Y-%m")
-
-    query = """
-        SELECT 
-            q.subject AS subject,
-            COUNT(*) AS total_classes,
-            SUM(CASE WHEN a.status IN ('P','Present') THEN 1 ELSE 0 END) AS attended
-        FROM qrsession q
-        LEFT JOIN attendance a 
-            ON q.session_id = a.session_id
-        LEFT JOIN student s
-            ON a.student_id = s.student_id
-        WHERE s.roll_number = %s
-          AND DATE_FORMAT(q.date, '%%Y-%%m') = %s
-        GROUP BY q.subject
-        ORDER BY q.subject;
-    """
-
-    try:
-        cnx = get_db_connection()
-        cur = cnx.cursor(dictionary=True)
-        cur.execute(query, (roll, month))
-        rows = cur.fetchall()
-
-        for r in rows:
-            total = int(r["total_classes"]) or 0
-            att = int(r["attended"]) or 0
-            r["percentage"] = round((att / total) * 100, 2) if total else 0
-
-        cur.close()
-        cnx.close()
-        return jsonify({
-            "roll": roll,
-            "month": month,
-            "records": rows
-        }), 200
-
-    except Exception as e:
-        print("ERR:", e)
-        return jsonify({"error": str(e)}), 500
 # ----------------------------
 # TS -Student Overall Attendance Summary (by roll number)
 # ----------------------------
@@ -522,13 +425,7 @@ def teacher_summary():
     stream = request.args.get("stream")
     semester = request.args.get("semester")
     subject = request.args.get("subject")  # optional
-    date_param = request.args.get("date")
-
-    # Default: today
-    if not date_param:
-        # inside /api/teacher/summary
-        date_param = "2025-09-03"  # hardcoded instead of dt.today()
-
+    date_param = datetime.now()
 
     # -----------------------------
     # DB connection
@@ -563,7 +460,7 @@ def teacher_summary():
         ON LOWER(TRIM(REPLACE(s.class,' ',''))) = LOWER(TRIM(REPLACE(q.class,' ','')))
         AND LOWER(TRIM(REPLACE(s.stream,' ',''))) = LOWER(TRIM(REPLACE(q.stream,' ','')))
         AND LOWER(TRIM(REPLACE(s.semester,'Sem ',''))) = LOWER(TRIM(REPLACE(q.semester,'Sem ','')))
-        AND DATE(q.date) = %s
+        AND DATE(q.date) <= %s
         {subject_filter}
     LEFT JOIN attendance a
         ON a.student_id = s.student_id
@@ -599,9 +496,8 @@ def teacher_summary():
     return jsonify(data)
 
 #---------------------
-# SS - date wise attendnce
+# Student - Date wise Attendance (already present, fixed)
 #---------------------
-
 @app.route("/api/student/<roll>/attendance", methods=["GET"])
 def student_attendance_by_date(roll):
     """
@@ -617,12 +513,15 @@ def student_attendance_by_date(roll):
             q.subject AS subject,
             COALESCE(a.status, 'Absent') AS status
         FROM qrsession q
+        JOIN student s
+            ON s.roll_number = %s
+            AND s.class = q.class
+            AND s.stream = q.stream
+            AND s.semester = q.semester
         LEFT JOIN attendance a 
-            ON q.session_id = a.session_id
-        LEFT JOIN student s
-            ON a.student_id = s.student_id
-        WHERE s.roll_number = %s
-          AND q.date = %s
+            ON a.session_id = q.session_id
+            AND a.student_id = s.student_id
+        WHERE q.date = %s
         ORDER BY q.subject;
     """
 
@@ -643,11 +542,92 @@ def student_attendance_by_date(roll):
     except Exception as e:
         print("ERR:", e)
         return jsonify({"error": str(e)}), 500
+# ---------- Student: Monthly Attendance ----------
+@app.route("/api/student/<roll>/monthly", methods=["GET"])
+def student_monthly_report(roll):
+    """
+    Returns subject-wise attendance for a student for all months (or specific month if passed)
+    """
+    month = request.args.get("month")  # optional, YYYY-MM
 
+    try:
+        cnx = get_db_connection()
+        cur = cnx.cursor(dictionary=True)
 
-#---------------------
-# SS -sub wise percentage 
-#---------------------
+        if month:
+            # if month is passed, use only that month
+            query = """
+            SELECT 
+                q.subject AS subject,
+                COUNT(q.session_id) AS total_classes,
+                SUM(CASE WHEN a.attendance_id IS NOT NULL AND a.status IN ('P','Present') THEN 1 ELSE 0 END) AS attended
+            FROM qrsession q
+            JOIN student s
+                ON s.roll_number = %s
+                AND LOWER(TRIM(REPLACE(s.class,' ',''))) = LOWER(TRIM(REPLACE(q.class,' ','')))
+                AND LOWER(TRIM(REPLACE(s.stream,' ',''))) = LOWER(TRIM(REPLACE(q.stream,' ','')))
+                AND LOWER(TRIM(REPLACE(s.semester,'Sem ',''))) = LOWER(TRIM(REPLACE(q.semester,'Sem ','')))
+            LEFT JOIN attendance a
+                ON a.session_id = q.session_id
+                AND a.student_id = s.student_id
+            WHERE DATE_FORMAT(q.date, '%%Y-%%m') = %s
+            GROUP BY q.subject
+            ORDER BY q.subject;
+            """
+            cur.execute(query, (roll, month))
+            month_label = month
+        else:
+            # No month passed → get all sessions for the student
+            query = """
+            SELECT 
+                q.subject AS subject,
+                COUNT(q.session_id) AS total_classes,
+                SUM(CASE WHEN a.attendance_id IS NOT NULL AND a.status IN ('P','Present') THEN 1 ELSE 0 END) AS attended
+            FROM qrsession q
+            JOIN student s
+                ON s.roll_number = %s
+                AND LOWER(TRIM(REPLACE(s.class,' ',''))) = LOWER(TRIM(REPLACE(q.class,' ','')))
+                AND LOWER(TRIM(REPLACE(s.stream,' ',''))) = LOWER(TRIM(REPLACE(q.stream,' ','')))
+                AND LOWER(TRIM(REPLACE(s.semester,'Sem ',''))) = LOWER(TRIM(REPLACE(q.semester,'Sem ','')))
+            LEFT JOIN attendance a
+                ON a.session_id = q.session_id
+                AND a.student_id = s.student_id
+            GROUP BY q.subject
+            ORDER BY q.subject;
+            """
+            cur.execute(query, (roll,))
+            month_label = "all_sessions"
+
+        rows = cur.fetchall()
+        cur.close()
+        cnx.close()
+
+        records = []
+        for r in rows:
+            total = int(r.get("total_classes") or 0)
+            attended = int(r.get("attended") or 0)
+            percentage = round((attended / total) * 100, 2) if total > 0 else 0.0
+            records.append({
+                "subject": r.get("subject"),
+                "total_classes": total,
+                "attended": attended,
+                "percentage": percentage
+            })
+
+        return jsonify({
+            "roll": roll,
+            "month": month_label,
+            "records": records
+        }), 200
+
+    except Exception as e:
+        print("ERR in student_monthly_report:", str(e))
+        try:
+            cur.close()
+            cnx.close()
+        except:
+            pass
+        return jsonify({"error": str(e)}), 500
 
 # ----------------------------
 # Run Flask

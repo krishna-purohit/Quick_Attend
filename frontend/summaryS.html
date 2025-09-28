@@ -1,108 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Monthly Report - QuickAttend</title>
-  <link rel="stylesheet" href="qr.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickAttend - Monthly Summary</title>
+  <link rel="stylesheet" href="./qr.css" />
   <style>
-    table {
-      margin: 20px auto;
-      width: 90%;
-      text-align: center;
-      border-collapse: collapse;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      background: white;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-    }
-    th {
-      background: #41a7ef;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background: #f9f9f9;
-    }
-    .low { color: red; font-weight: bold; }
-    .mid { color: orange; font-weight: bold; }
-    .high { color: rgb(8, 245, 8); font-weight: bold; }
-    .student-container {
-      text-align: center;
-      padding: 20px;
-    }
-    .student-logo {
-      width: 100px;
-      margin-bottom: 10px;
-    }
-   
+    body { font-family: Arial, sans-serif; background: #f7f9fc; padding: 20px; }
+    .student-container { max-width: 700px; margin: auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1); }
+    h2 { text-align: center; color: #222; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 12px; text-align: center; }
+    th { background: #1976d2; color: white; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    .back-btn { margin-top: 20px; padding: 10px; background: #0091ea; color: white; border: none; border-radius: 8px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <div class="student-container">
-    <img src="logo_qrsystem.png" class="student-logo" />
-    <h2>📊 Monthly Attendance Report</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Subject</th>
-          <th>Total Classes</th>
-          <th>Attended</th>
-          <th>%</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td colspan="4">Loading...</td>
-        </tr>
-      </tbody>
-    </table>
-    <button class="back-btn" onclick="location.href='student.html'">⬅ Back</button>
-  </div>
+<div class="student-container">
+    <h2>📊 Monthly Summary</h2>
+    <p>Roll No: <span id="rollno"></span></p>
+    <div id="monthlySummary"></div>
+    <button class="back-btn" onclick="location.href='./student.html'">⬅ Back</button>
+</div>
+<script>
+  let rollno = null;
 
-  <script>
-    const API_BASE = "http://127.0.0.1:5000";
-    const roll = sessionStorage.getItem("roll_no");   // login ke baad store karo
-
-    async function loadMonthlyReport() {
-      const today = new Date();
-      const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-
-      const tbody = document.querySelector("tbody");
-      tbody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
-
-      try {
-        const res = await fetch(`${API_BASE}/api/student/${roll}/monthly?month=${month}`);
-        const data = await res.json();
-
-        if (!data.records || data.records.length === 0) {
-          tbody.innerHTML = `<tr><td colspan='4'>No records found for ${month}</td></tr>`;
-          return;
-        }
-
-        tbody.innerHTML = data.records.map(r => {
-          let cls = "high";
-          if (r.percentage < 75) cls = "low";
-          else if (r.percentage < 85) cls = "mid";
-
-          return `
-            <tr>
-              <td>${r.subject}</td>
-              <td>${r.total_classes}</td>
-              <td>${r.attended}</td>
-              <td class="${cls}">${r.percentage}%</td>
-            </tr>
-          `;
-        }).join("");
-      } catch (err) {
-        console.error(err);
-        tbody.innerHTML = "<tr><td colspan='4'>Error loading report</td></tr>";
-      }
+  window.onload = function () {
+    const user = JSON.parse(sessionStorage.getItem("user"));
+    if (user && user.data) {
+      rollno = user.data.roll_number;
+      document.getElementById("rollno").textContent = rollno;
     }
+    loadMonthlySummary();
+  };
 
-    // call on page load
-    loadMonthlyReport();
-  </script>
+  async function loadMonthlySummary() {
+    const box = document.getElementById("monthlySummary");
+    box.innerHTML = "<p>⏳ Loading...</p>";
+
+    try {
+      // ✅ Corrected API URL
+      const res = await fetch(`http://127.0.0.1:5000/api/student/${rollno}/monthly`);
+      const data = await res.json();
+
+      if (data && data.records && data.records.length > 0) {
+        let html = `<p><b>Month:</b> ${data.month}</p>`;
+        html += "<table><tr><th>Subject</th><th>Total Classes</th><th>Attended</th><th>%</th></tr>";
+
+        data.records.forEach(r => {
+          html += `<tr>
+            <td>${r.subject}</td>
+            <td>${r.total_classes}</td>
+            <td>${r.attended}</td>
+            <td>${r.percentage}%</td>
+          </tr>`;
+        });
+
+        html += "</table>";
+        box.innerHTML = html;
+      } else {
+        box.innerHTML = "<p>No records for this month</p>";
+      }
+    } catch (err) {
+      console.error(err);
+      box.innerHTML = "<p style='color:red;'>Error fetching monthly summary</p>";
+    }
+  }
+</script>
+
 </body>
 </html>
