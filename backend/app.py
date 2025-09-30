@@ -3,7 +3,7 @@ import mysql.connector
 
 import qrcode
 import io, base64
-from datetime import datetime
+from datetime import datetime, timedelta
 import io, base64, json, datetime as dt
 
 from flask_cors import CORS
@@ -97,32 +97,32 @@ def generate_qr():
         
         # Convert username to actual teacher ID
         teacher_input = data["teacher_id"]
-        
         if isinstance(teacher_input, str) and not teacher_input.isdigit():
-            # It's a username, fetch the actual teacher ID
             cursor.execute("SELECT teacher_id FROM teacher WHERE username = %s", (teacher_input,))
             teacher_result = cursor.fetchone()
-            
             if not teacher_result:
                 cursor.close()
                 db.close()
                 return jsonify(ok=False, error="Teacher not found"), 404
-            
             actual_teacher_id = teacher_result[0]
         else:
-            # It's already an ID (integer or numeric string)
             actual_teacher_id = int(teacher_input)
 
-        # Insert into database with actual integer teacher ID
+        # Set expiration time (e.g., 15 minutes from now)
+        expire_minutes = 15
+        expires_at = datetime.now() + timedelta(minutes=expire_minutes)
+
+        # Insert into database with actual integer teacher ID and expires_at
         cursor.execute("""
-        INSERT INTO qrsession (teacher_id, subject, class, stream, semester, date, time)
-        VALUES (%s, %s, %s, %s, %s, CURDATE(), CURTIME())
+        INSERT INTO qrsession (teacher_id, subject, class, stream, semester, date, time, expires_at)
+        VALUES (%s, %s, %s, %s, %s, CURDATE(), CURTIME(), %s)
         """, (
             actual_teacher_id,
             data["subject"],
             data["class"],
             data["stream"],
-            data["semester"]
+            data["semester"],
+            expires_at.strftime("%Y-%m-%d %H:%M:%S")
         ))
         
         db.commit()
@@ -130,7 +130,7 @@ def generate_qr():
         cursor.close()
         db.close()
 
-        # Create payload with the actual session_id from database
+        # Create payload with the actual session_id and expires_at
         payload = {
             "type": "attendance",
             "session_id": new_session_id,
@@ -140,7 +140,8 @@ def generate_qr():
             "semester": data["semester"],
             "subject": data["subject"],
             "date": dt.date.today().isoformat(),
-            "time": dt.datetime.now().strftime("%H:%M:%S")
+            "time": dt.datetime.now().strftime("%H:%M:%S"),
+            "expires_at": expires_at.isoformat()
         }
 
         # QR image base64
@@ -161,7 +162,6 @@ def generate_qr():
         if 'db' in locals():
             db.close()
         return jsonify(ok=False, error=f"Server error: {str(e)}"), 500
-    
 # ----------------------------
 # mark attendance for student  
 # ----------------------------
@@ -186,7 +186,29 @@ def mark_attendance():
             return jsonify({"ok": False, "error": "Invalid roll number"}), 400
         student_id = student["student_id"]
 
-        # 2) check if already marked for this session and student
+        # 2) get session details and check expiry
+        cursor.execute("SELECT date, time, expires_at FROM qrsession WHERE session_id=%s", (session_id,))
+        session_row = cursor.fetchone()
+        if not session_row:
+            return jsonify({"ok": False, "expired": True, "message": "Invalid or expired QR session"}), 400
+
+        # Convert expires_at safely to datetime
+        expires_at = session_row.get("expires_at")
+        if isinstance(expires_at, str):
+            try:
+                expires_at = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+            except:
+                expires_at = datetime.now()  # fallback → expired
+        elif expires_at is None:
+            expires_at = datetime.now()  # fallback → expired
+
+        # Check expiry
+        if datetime.now() > expires_at:
+            cursor.close()
+            conn.close()
+            return jsonify({"ok": False, "expired": True, "message": "QR code has expired"}), 400
+
+        # 3) check if already marked
         cursor.execute(
             "SELECT attendance_id, status FROM attendance WHERE student_id=%s AND session_id=%s",
             (student_id, session_id)
@@ -194,7 +216,6 @@ def mark_attendance():
         existing = cursor.fetchone()
 
         if existing:
-            # attendance exists in DB — return success but mark flag so frontend can show "Already marked"
             cursor.close()
             conn.close()
             return jsonify({
@@ -206,7 +227,7 @@ def mark_attendance():
                 "message": "Attendance already marked for this session"
             }), 200
 
-        # 3) insert attendance
+        # 4) insert attendance
         cursor.execute(
             "INSERT INTO attendance (student_id, session_id, status) VALUES (%s, %s, %s)",
             (student_id, session_id, status)
@@ -227,17 +248,13 @@ def mark_attendance():
 
     except Exception as e:
         conn.rollback()
-        # log on server
         print("Error in mark_attendance:", str(e))
-        try:
-            cursor.close()
-        except:
-            pass
-        try:
-            conn.close()
-        except:
-            pass
-        return jsonify({"ok": False, "error": str(e)}), 500
+        try: cursor.close()
+        except: pass
+        try: conn.close()
+        except: pass
+        # frontend safe error
+        return jsonify({"ok": False, "error": "Server error while marking attendance. Please try again later."}), 500
 
 #-------------
 # update attendace by teacher
@@ -633,4 +650,4 @@ def student_monthly_report(roll):
 # Run Flask
 # ----------------------------
 if __name__ == "__main__":
-    app.run(debug=True) 
+    app.run(host="0.0.0.0", port=5000, debug=True)
