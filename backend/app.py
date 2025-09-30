@@ -266,34 +266,57 @@ def update_attendance():
     date = data.get("date")
     subject = data.get("subject")
 
+    if not roll_no or not date or not subject:
+        return jsonify(ok=False, message="Missing data"), 400
+
     conn = get_db_connection()
     cur = conn.cursor(dictionary=True)
 
-    # 1. find current status
+    # ✅ Check if record already exists
     cur.execute("""
-        SELECT a.status, a.attendance_id
+        SELECT a.attendance_id, a.status
         FROM attendance a
         JOIN student s ON s.student_id = a.student_id
-        JOIN qrsession q ON a.session_id = q.session_id
-        WHERE s.roll_number=%s AND q.date=%s AND q.subject=%s
-    """, (roll_no, date, subject))
+        JOIN qrsession q ON q.session_id = a.session_id
+        WHERE s.roll_number=%s AND q.subject=%s AND q.date=%s
+        ORDER BY q.time DESC
+        LIMIT 1
+    """, (roll_no, subject, date))
+
     row = cur.fetchone()
 
-    if not row:
+    if row:
+        # ✅ If exists → toggle Present/Absent
+        new_status = "Absent" if row["status"] == "Present" else "Present"
+        cur.execute("UPDATE attendance SET status=%s WHERE attendance_id=%s", (new_status, row["attendance_id"]))
+        conn.commit()
         cur.close()
         conn.close()
-        return jsonify({"status": "error", "message": "Attendance record not found"}), 404
+        return jsonify(ok=True, message=f"Attendance updated to {new_status}")
+    else:
+        # ✅ If not exists → insert new record as Present
+        # First find student_id and latest session_id
+        cur.execute("SELECT student_id FROM student WHERE roll_number=%s", (roll_no,))
+        student = cur.fetchone()
 
-    current_status = row["status"]
-    new_status = "Absent" if current_status in ("P","Present") else "Present"
+        cur.execute("""
+            SELECT session_id FROM qrsession
+            WHERE subject=%s AND date=%s
+            ORDER BY time DESC LIMIT 1
+        """, (subject, date))
+        session = cur.fetchone()
 
-    # 2. update status
-    cur.execute("UPDATE attendance SET status=%s WHERE attendance_id=%s", (new_status, row["attendance_id"]))
-    conn.commit()
-    cur.close()
-    conn.close()
+        if not student or not session:
+            cur.close()
+            conn.close()
+            return jsonify(ok=False, message="No student/session found"), 404
 
-    return jsonify({"status": "success", "message": f"Updated to {new_status}"})
+        cur.execute("INSERT INTO attendance (student_id, session_id, status) VALUES (%s, %s, %s)",
+                    (student["student_id"], session["session_id"], "Present"))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify(ok=True, message="Attendance marked as Present")
 
 # ----------------------------
 # TS -Student Overall Attendance Summary (by roll number)
