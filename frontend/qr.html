@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>QuickAttend - Login</title>
-  <link rel="stylesheet" href="qr.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='qr.css') }}">
+ 
 </head>
 <body>
   <!-- Splash Screen -->
@@ -17,17 +18,80 @@
   <!-- Login Screen -->
   <div class="login-screen full" id="loginScreen">
     <div class="login-card animate-login">
-     <!-- <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo" />-->
       <h1>Welcome!</h1>
-      <img src="logo_qrsystem.png" alt="Illustration" class="illustration" />
-    <form onsubmit="loginUser(event)">
-         <input id="uid" placeholder="Roll Number or Teacher ID" required>
-         <input id="upass" type="password" placeholder="Password" required>
-         <button type="submit">Login</button>
-</form>
-   </div>
+      <img src="{{ url_for('static', filename='logo_qrsystem.png') }}" class="illustration" />
+      <form onsubmit="loginUser(event)">
+        <input id="uid" placeholder="Roll Number or Teacher ID" required>
+        <input id="upass" type="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+      </form>
+    </div>
   </div>
-<script src="qr.js">
+
+<script>
+  // Animation: splash → login
+  window.addEventListener("DOMContentLoaded", () => {
+    setTimeout(() => {
+      document.getElementById("splashScreen").style.display = "none";
+      document.getElementById("loginScreen").classList.add("show");
+    }, 3000);
+  });
+
+  // Login function
+  async function loginUser(event) {
+    event.preventDefault(); // prevent page reload
+    const uid = document.getElementById("uid").value.trim();
+    const pass = document.getElementById("upass").value.trim();
+
+    if (!uid || !pass) {
+      alert("Please enter both ID and Password!");
+      return;
+    }
+
+    try {
+      let url = "";
+      let body = {};
+
+      // dynamically use current host & port
+      const origin = window.location.origin;
+
+      if (uid.startsWith("T")) {
+        // Teacher login
+        url = `${origin}/api/teacher/login`;
+        body = { username: uid, password: pass };
+      } else {
+        // Student login
+        url = `${origin}/api/student/login`;
+        body = { roll_number: uid, password: pass };
+      }
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+      console.log("Login response:", data);
+
+      if (res.ok && data.ok) {
+        // Save session info
+        sessionStorage.setItem("user", JSON.stringify(data));
+
+        // Redirect based on role
+        if (uid.startsWith("T")) {
+          window.location.href = `${origin}/teacher`;
+        } else {
+          window.location.href = `${origin}/student`;
+        }
+      } else {
+        alert(data.message || "Invalid login. Try again!");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Server not reachable. Start Flask backend!");
+    }
+  }
 </script>
 </body>
 </html>

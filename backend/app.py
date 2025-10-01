@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify
 import mysql.connector
 
 import qrcode
@@ -8,7 +8,7 @@ import io, base64, json, datetime as dt
 
 from flask_cors import CORS
 
-app = Flask(__name__)
+app = Flask(__name__,template_folder="../frontend",static_folder="../frontend")
 
 # Enable CORS for specific origins
 CORS(app)
@@ -22,6 +22,40 @@ def get_db_connection():
         database="attendance_system"
     )
 
+@app.route("/")
+def home():
+    return render_template("qr.html")
+
+@app.route("/student")
+def student_page():
+    return render_template("student.html")
+
+@app.route("/teacher")
+def teacher_page():
+    return render_template("teacher.html")
+@app.route("/scan")
+def scan_attendance():
+    return render_template("scan.html")
+
+@app.route("/view_today")
+def view_today_attendance():
+    return render_template("ViewS.html")
+
+@app.route("/monthly")
+def monthly_summary():
+    return render_template("summaryS.html")
+
+@app.route("/generate")
+def generate_page():
+    return render_template("generate.html")
+
+@app.route("/view/teacher")
+def view_teacher():
+    return render_template("viewT.html")
+
+@app.route("/summary/teacher")
+def summary_teacher():
+    return render_template("summaryT.html")
 # ----------------------------
 # Student Login API
 # ----------------------------

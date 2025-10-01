@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Teacher Dashboard - QuickAttend</title>
-  <link rel="stylesheet" href="./qr.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='qr.css') }}" />
   <style>
     body {
       background: linear-gradient(to bottom, #e6f3ff, #ffffff);
@@ -96,18 +96,19 @@
 </head>
 <body>
   <div class="teacher-container">
-    <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed" />
+    <img src="{{ url_for('static', filename='logo_qrsystem.png') }}" alt="QuickAttend Logo" class="logo-fixed" />
     
-    <img src="Lteacher.jpg" alt="Teacher Photo" class="teacher-photo" />
+    <img src="{{ url_for('static', filename='Lteacher.jpg') }}" alt="Teacher Photo" class="teacher-photo" />
     <h1 class="teacher-title">Welcome, <span>Teacher</span></h1>
 
-    <div class="teacher-buttons">
-      <button onclick="location.href='./generate.html'">🧾 Generate QR</button>
-      <button onclick="location.href='./viewT.html'">📋 View Attendance</button>
-      <button onclick="location.href='./summaryT.html'">📊 Monthly Summary</button>
-    </div>
+ <div class="teacher-buttons">
+  <button onclick="location.href='{{ url_for('generate_page') }}'">🧾 Generate QR</button>
+  <button onclick="location.href='{{ url_for('view_teacher') }}'">📋 View Attendance</button>
+  <button onclick="location.href='{{ url_for('summary_teacher') }}'">📊 Monthly Summary</button>
+</div>
 
-    <button class="logout-btn" onclick="location.href='./qr.html'">Logout</button>
+<button class="logout-btn" onclick="location.href='{{ url_for('home') }}'">Logout</button>
+
   </div>
 </body>
 </html>

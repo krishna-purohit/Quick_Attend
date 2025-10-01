@@ -90,40 +90,32 @@
       scannerStarted = true;
     }
   };
-
-  async function sendMarkAttendance(roll_number, session_id, status = "Present") {
+async function sendMarkAttendance(rollNumber, sessionId) {
     try {
-      const res = await fetch("http://127.0.0.1:5000/api/attendance/mark", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roll_number, session_id, status })
-      });
+        const response = await fetch("http://127.0.0.1:5000/api/attendance/mark", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roll_number: rollNumber, session_id: sessionId })
+        });
 
-      const json = await res.json();
+        const data = await response.json();
+        console.log("API Response:", data);
 
-      if (!res.ok) {
-        console.error("Server returned non-200:", res.status, json);
-        showToast("Server error. Check console.");
-        return { ok: false, reason: "server", payload: json };
-      }
-
-      if (json.ok) {
-        if (json.already_marked) {
-          return { ok: true, already_marked: true, payload: json };
+        if (data.ok && !data.already_marked) {
+            alert("✅ Attendance marked successfully!");
+        } else if (data.already_marked) {
+            alert("ℹ️ Attendance already marked for this session.");
+        } else if (data.expired) {
+            alert("❌ QR has expired. Please contact your teacher.");
         } else {
-          return { ok: true, already_marked: false, payload: json };
+            alert("⚠️ Could not mark attendance: " + (data.error || data.message));
         }
-      } else {
-        showToast(json.message || "Could not mark attendance");
-        return { ok: false, reason: "application", payload: json };
-      }
 
     } catch (err) {
-      console.error("Network/Fetch error:", err);
-      showToast("Network error. Try again.");
-      return { ok: false, reason: "network", error: err };
+        console.error("Fetch error:", err);
+        alert("⚠️ Network error. Try again!");
     }
-  }
+}
 
   function showToast(msg) {
     alert(msg); // replace with a toast/snackbar if you have UI

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📊 Attendance Summary Report</title>
-  <link rel="stylesheet" href="./qr.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='qr.css') }}" />
   <style>
     body {
       background: #f9fcff;
@@ -94,7 +94,7 @@
   </style>
 </head>
 <body>
-  <img src="logo_qrsystem.png" alt="QuickAttend Logo" class="logo-fixed">
+  <img src="{{ url_for('static', filename='logo_qrsystem.png') }}" alt="QuickAttend Logo" class="logo-fixed">
 
   <div class="view-container">
     <div class="view-header">📊 Attendance Summary Report</div>
@@ -145,7 +145,7 @@
       </tbody>
     </table>
 
-    <button class="back-btn" onclick="location.href='./teacher.html'">⬅ BACK</button>
+    <button class="back-btn" onclick="location.href='{{ url_for("teacher_page") }}'">⬅ BACK</button>
   </div>
 
 <script>
