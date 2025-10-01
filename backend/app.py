@@ -21,7 +21,9 @@ def get_db_connection():
         password="sql_24",   # tumhara password
         database="attendance_system"
     )
-
+#-------------------
+#ALL Route
+#------------------
 @app.route("/")
 def home():
     return render_template("qr.html")
