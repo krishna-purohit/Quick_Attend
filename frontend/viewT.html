@@ -38,7 +38,7 @@
 
   select, input[type="date"] {
     width: 100%;
-    padding: 12px 15px; /* added horizontal padding for better look */
+    padding: 12px 15px;
     margin-bottom: 18px;
     border-radius: 12px;
     border: 1.5px solid #ccc;
@@ -74,9 +74,19 @@
     background-color: #0277bd;
   }
 
+  /* Scrollable table wrapper */
+  .table-wrapper {
+    width: 100%;
+    max-height: 400px; /* adjust as needed */
+    overflow-y: auto;
+    overflow-x: auto;
+    margin-top: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  }
+
   .attendance-table {
     width: 100%;
-    margin-top: 20px;
     border-collapse: collapse;
   }
 
@@ -88,9 +98,13 @@
     border: 1px solid #ddd;
   }
 
+  /* Sticky header */
   .attendance-table th {
+    position: sticky;
+    top: 0;
     background-color: #0091ea;
     color: white;
+    z-index: 2;
   }
 
   .attendance-table tr:nth-child(even) {
@@ -104,6 +118,7 @@
     border-radius: 20px;
     font-size: 14px;
   }
+
   .summary {
     display: none; /* hidden by default */
     justify-content: center;
@@ -126,7 +141,7 @@
   .absent-count {
     background: #f44336;
   }
-  
+
   .present {
     background-color: #c8f7c5;
     color: green;
@@ -136,6 +151,7 @@
     background-color: #f9c2c2;
     color: red;
   }
+
   .action-btn {
     padding: 6px 12px;
     border: none;
@@ -192,8 +208,6 @@
   <div class="view-container">
     <div class="view-header">🔍 View Attendance</div>
 
-    
-
     <!-- Dropdowns -->
     <select id="classSelect" required>
       <option selected disabled>Select Class</option>
@@ -229,126 +243,122 @@
  
     <!-- Load Button -->
     <button class="load-btn" onclick="loadAttendance()">📋 Load Attendance</button>
-     <!-- ✅ Summary Counts -->
+
+    <!-- Summary Counts -->
     <div class="summary" id="summaryBox">
       <span class="present-count">Present: <span id="presentCount">0</span></span>
       <span class="absent-count">Absent: <span id="absentCount">0</span></span>
     </div>
-    <!-- Table -->
-    <table class="attendance-table">
-      <thead>
-        <tr>
-          <th>Roll No</th>
-          <th>Name</th>
-          <th>Subject</th>
-          <th>Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody id="studentList">
-        <tr>
-          <td colspan="5">No data loaded</td>
-        </tr>
-      </tbody>
-    </table>
 
-  <button class="back-btn" onclick="location.href='{{ url_for("teacher_page") }}'">⬅ BACK</button>
+    <!-- Table inside scroll wrapper -->
+    <div class="table-wrapper">
+      <table class="attendance-table">
+        <thead>
+          <tr>
+            <th>Roll No</th>
+            <th>Name</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="studentList">
+          <tr>
+            <td colspan="5">No data loaded</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
+    <button class="back-btn" onclick="location.href='{{ url_for("teacher_page") }}'">⬅ BACK</button>
   </div>
+
   <script>
- 
-    // ✅ set default date = today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById("todayDate").value = today;
 
-    // ✅ API se data laane ka function
-    // ✅ API se data laane ka function
-async function loadAttendance() {
-  const className = document.getElementById("classSelect").value;
-  const stream = document.getElementById("streamSelect").value;
-  const semester = document.getElementById("semesterSelect").value;
-  const subject = document.getElementById("subjectSelect").value;
-  const date = document.getElementById("todayDate").value;
+    async function loadAttendance() {
+      const className = document.getElementById("classSelect").value;
+      const stream = document.getElementById("streamSelect").value;
+      const semester = document.getElementById("semesterSelect").value;
+      const subject = document.getElementById("subjectSelect").value;
+      const date = document.getElementById("todayDate").value;
 
-  if (!className || !stream || !semester || !subject) {
-    alert("⚠ Please select all filters before loading attendance.");
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      `https://preroyal-kelly-stuporously.ngrok-free.dev/api/get_attendance?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}&date=${date}`
-    );
-    let data = await res.json();
-
-    // ✅ Remove duplicates by roll_no
-    const uniqueData = [];
-    const seen = new Set();
-    data.forEach(s => {
-      if (!seen.has(s.roll_no)) {
-        seen.add(s.roll_no);
-        uniqueData.push(s);
+      if (!className || !stream || !semester || !subject) {
+        alert("⚠ Please select all filters before loading attendance.");
+        return;
       }
-    });
 
-    const tbody = document.getElementById("studentList");
-    tbody.innerHTML = "";
+      try {
+        const res = await fetch(
+          `https://preroyal-kelly-stuporously.ngrok-free.dev/api/get_attendance?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}&date=${date}`
+        );
+        let data = await res.json();
 
-    let presentCount = 0, absentCount = 0;
+        const uniqueData = [];
+        const seen = new Set();
+        data.forEach(s => {
+          if (!seen.has(s.roll_no)) {
+            seen.add(s.roll_no);
+            uniqueData.push(s);
+          }
+        });
 
-    if (uniqueData.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5">No records found</td></tr>`;
-      document.getElementById("presentCount").innerText = 0;
-      document.getElementById("absentCount").innerText = 0;
-      document.getElementById("summaryBox").style.display = "none";
-      return;
+        const tbody = document.getElementById("studentList");
+        tbody.innerHTML = "";
+
+        let presentCount = 0, absentCount = 0;
+
+        if (uniqueData.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5">No records found</td></tr>`;
+          document.getElementById("presentCount").innerText = 0;
+          document.getElementById("absentCount").innerText = 0;
+          document.getElementById("summaryBox").style.display = "none";
+          return;
+        }
+
+        uniqueData.forEach(s => {
+          if (s.status.toLowerCase() === "present" || s.status.toLowerCase() === "p") presentCount++;
+          else absentCount++;
+
+          tbody.innerHTML += `
+            <tr>
+              <td>${s.roll_no}</td>
+              <td>${s.name}</td>
+              <td>${subject}</td>
+              <td><span class="status ${s.status.toLowerCase()}">${s.status}</span></td>
+              <td>
+                <button class="action-btn" onclick="toggleAttendance('${s.roll_no}','${date}','${subject}')">Toggle</button>
+              </td>
+            </tr>
+          `;
+        });
+
+        document.getElementById("presentCount").innerText = presentCount;
+        document.getElementById("absentCount").innerText = absentCount;
+        document.getElementById("summaryBox").style.display = "flex";
+
+      } catch (err) {
+        console.error("Error fetching attendance:", err);
+        alert("❌ Failed to load attendance from server.");
+      }
     }
 
-    uniqueData.forEach(s => {
-      if (s.status.toLowerCase() === "present" || s.status.toLowerCase() === "p") presentCount++;
-      else absentCount++;
-
-      tbody.innerHTML += `
-        <tr>
-          <td>${s.roll_no}</td>
-          <td>${s.name}</td>
-          <td>${subject}</td>
-          <td><span class="status ${s.status.toLowerCase()}">${s.status}</span></td>
-          <td>
-            <button class="action-btn" onclick="toggleAttendance('${s.roll_no}','${date}','${subject}')">Toggle</button>
-          </td>
-        </tr>
-      `;
-    });
-
-    // ✅ update counts & show summary
-    document.getElementById("presentCount").innerText = presentCount;
-    document.getElementById("absentCount").innerText = absentCount;
-    document.getElementById("summaryBox").style.display = "flex";
-
-  } catch (err) {
-    console.error("Error fetching attendance:", err);
-    alert("❌ Failed to load attendance from server.");
-  }
-}
-
-    // ✅ Toggle attendance API call
     async function toggleAttendance(roll_no, date, subject) {
-  try {
-    const res = await fetch("https://preroyal-kelly-stuporously.ngrok-free.dev/api/update_attendance", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roll_no, date, subject })
-    });
-    const result = await res.json();
-    alert(result.message);
-    loadAttendance(); // refresh table
-  } catch (err) {
-    console.error("Error updating:", err);
-    alert("❌ Failed to update attendance.");
-  }
-}
-
+      try {
+        const res = await fetch("https://preroyal-kelly-stuporously.ngrok-free.dev/api/update_attendance", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roll_no, date, subject })
+        });
+        const result = await res.json();
+        alert(result.message);
+        loadAttendance(); // refresh table
+      } catch (err) {
+        console.error("Error updating:", err);
+        alert("❌ Failed to update attendance.");
+      }
+    }
   </script>
 </body>
 </html>
