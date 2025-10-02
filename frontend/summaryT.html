@@ -29,7 +29,7 @@
       text-align: center;
     }
 
-    select, input[type="date"] {
+    select {
       width: 100%;
       padding: 12px;
       margin-bottom: 18px;
@@ -40,8 +40,24 @@
       transition: border 0.3s;
     }
 
-    select:focus, input:focus {
+    select:focus {
       border: 1.5px solid #0091ea;
+    }
+
+    .load-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #0091ea;
+      color: white;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    .load-btn:hover {
+      background-color: #0277bd;
     }
 
     .attendance-table {
@@ -129,6 +145,10 @@
       <option>OS</option>
       <option>Math</option>
     </select>
+
+    <!-- ✅ Load Button -->
+    <button class="load-btn" onclick="loadSummary()">📋 Load Summary</button>
+
     <!-- Table -->
     <table class="attendance-table">
       <thead>
@@ -149,53 +169,47 @@
   </div>
 
 <script>
-  // 🔄 Auto-load when any dropdown changes
-  document.querySelectorAll("#streamSelect, #yearSelect, #semesterSelect, #subjectSelect")
-    .forEach(select => {
-      select.addEventListener("change", loadSummary);
-    });
-
   async function loadSummary() {
-  const stream = document.getElementById("streamSelect").value;
-  const className = document.getElementById("yearSelect").value;  
-  const semester = document.getElementById("semesterSelect").value;
-  const subject = document.getElementById("subjectSelect").value;
+    const stream = document.getElementById("streamSelect").value;
+    const className = document.getElementById("yearSelect").value;  
+    const semester = document.getElementById("semesterSelect").value;
+    const subject = document.getElementById("subjectSelect").value;
 
-  // Agar koi dropdown abhi select nahi hua → return
-  if (!stream || !className || !semester || !subject) return;
-
-  try {
-    // Date ko hata diya → backend default today lega
-    const res = await fetch(
-      `http://127.0.0.1:5000/api/teacher/summary?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}`
-    );
-
-    const data = await res.json();
-    console.log("Summary Data:", data);
-
-    const tbody = document.getElementById("summaryList");
-    tbody.innerHTML = "";
-
-    if (!data || data.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="3">No records found</td></tr>`;
+    if (!stream || !className || !semester || !subject) {
+      alert("⚠ Please select all filters before loading summary.");
       return;
     }
 
-    data.forEach(s => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${s.roll_no}</td>
-          <td>${s.name}</td>
-          <td>${s.attendance_percentage}% (${s.attended}/${s.total_classes})</td>
-        </tr>
-      `;
-    });
-  } catch (err) {
-    console.error("❌ Error fetching summary:", err);
-    alert("Failed to load summary. Check console for details.");
-  }
-}
+    try {
+      const res = await fetch(
+        `http://192.168.1.23:5000/api/teacher/summary?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}`
+      );
 
+      const data = await res.json();
+      console.log("Summary Data:", data);
+
+      const tbody = document.getElementById("summaryList");
+      tbody.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3">No records found</td></tr>`;
+        return;
+      }
+
+      data.forEach(s => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${s.roll_no}</td>
+            <td>${s.name}</td>
+            <td>${s.attendance_percentage}% (${s.attended}/${s.total_classes})</td>
+          </tr>
+        `;
+      });
+    } catch (err) {
+      console.error("❌ Error fetching summary:", err);
+      alert("Failed to load summary. Check console for details.");
+    }
+  }
 </script>
 
 </body>

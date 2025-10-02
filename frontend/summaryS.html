@@ -6,15 +6,85 @@
   <title>QuickAttend - Monthly Summary</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='qr.css') }}" />
   <style>
-    body { font-family: Arial, sans-serif; background: #f7f9fc; padding: 20px; }
-    .student-container { max-width: 700px; margin: auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0px 4px 12px rgba(0,0,0,0.1); }
-    h2 { text-align: center; color: #222; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { padding: 12px; text-align: center; }
-    th { background: #1976d2; color: white; }
-    tr:nth-child(even) { background: #f9f9f9; }
-    .back-btn { margin-top: 20px; padding: 10px; background: #0091ea; color: white; border: none; border-radius: 8px; cursor: pointer; }
-  </style>
+body { 
+    font-family: Arial, sans-serif; 
+    background: #f7f9fc; 
+    padding: 20px; 
+}
+.student-container { 
+    max-width: 700px; 
+    margin: auto; 
+    background: #fff; 
+    padding: 25px; 
+    border-radius: 12px; 
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.1); 
+}
+h2 { 
+    text-align: center; 
+    color: #222; 
+}
+
+/* Responsive table wrapper */
+.table-wrapper {
+    overflow-x: auto; /* horizontal scroll on small screens */
+    margin-top: 15px;
+}
+
+/* Table styles */
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    min-width: 400px; /* ensures scroll if mobile too narrow */
+}
+th, td { 
+    padding: 12px; 
+    text-align: center; 
+    border: 1px solid #ddd;
+}
+th { 
+    background: #1976d2; 
+    color: white; 
+}
+tr:nth-child(even) { 
+    background: #f9f9f9; 
+}
+
+/* Attendance % progress bar */
+.progress-container {
+    background: #e0e0e0;
+    border-radius: 8px;
+    height: 12px;
+    width: 100%;
+    margin: auto;
+}
+.progress-bar {
+    height: 12px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #4caf50, #81c784);
+    text-align: right;
+    color: white;
+    font-size: 10px;
+    line-height: 12px;
+    padding-right: 4px;
+}
+
+/* Back button */
+.back-btn { 
+    margin-top: 20px; 
+    padding: 10px; 
+    background: #0091ea; 
+    color: white; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+}
+
+/* Optional: smaller font on very small screens */
+@media (max-width: 400px) {
+    th, td { padding: 8px; font-size: 14px; }
+}
+</style>
+
 </head>
 <body>
 <div class="student-container">
@@ -41,7 +111,7 @@
 
     try {
       // ✅ Corrected API URL
-      const res = await fetch(`http://127.0.0.1:5000/api/student/${rollno}/monthly`);
+      const res = await fetch(`http://192.168.1.23:5000/api/student/${rollno}/monthly`);
       const data = await res.json();
 
       if (data && data.records && data.records.length > 0) {

@@ -1,125 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>QuickAttend - QR Scan</title>
-  <script src="https://unpkg.com/html5-qrcode"></script>
-  <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #f0f4ff, #dce6ff);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .container {
-      background: #fff;
-      width: 400px;
-      max-width: 95%;
-      padding: 25px;
-      border-radius: 15px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    h2 { margin-bottom: 15px; color: #2c3e50; }
-    #reader { width: 100%; margin-top: 15px; display: none; }
-    .btn {
-      background: linear-gradient(45deg, #4a6cf7, #6f85f5);
-      color: white; border: none; padding: 12px 20px;
-      border-radius: 10px; cursor: pointer; font-size: 16px;
-      margin-top: 10px; transition: 0.3s;
-    }
-    .btn:hover { background: linear-gradient(45deg, #3b5ad6, #5f73e0); }
-    .date { margin-top: 20px; font-weight: bold; color: #444; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuickAttend - QR Scan</title>
+<!-- Include html5-qrcode library -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+<style>
+body {
+  font-family: "Segoe UI", sans-serif;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #f0f4ff, #dce6ff);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.container {
+  background: #fff;
+  width: 400px;
+  max-width: 95%;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+  text-align: center;
+}
+h2 { margin-bottom: 15px; color: #2c3e50; }
+#reader { width: 100%; margin-top: 15px; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h2>Scan QR to Mark Attendance</h2>
-    <div id="reader"></div>
-  </div>
+<div class="container">
+  <h2>📷 Scan QR to Mark Attendance</h2>
+  <div id="reader"></div>
+</div>
 
 <script>
-  let scannerStarted = false;
-  let html5QrcodeScanner;
-  let rollno = null;
+let rollno = null;
 
-  window.onload = function () {
-    const user = JSON.parse(sessionStorage.getItem("user"));
-    if (user && user.data) {
-      rollno = user.data.roll_number;
-    }
+// Example: get roll number from session
+const user = JSON.parse(sessionStorage.getItem("user"));
+if (user && user.data) rollno = user.data.roll_number;
 
-    if (!scannerStarted) {
-      document.getElementById("reader").style.display = "block";
-      html5QrcodeScanner = new Html5Qrcode("reader");
+// Initialize scanner
+const html5QrcodeScanner = new Html5Qrcode("reader");
 
-      html5QrcodeScanner.start(
-        { facingMode: "environment" }, // back camera
-        { fps: 10, qrbox: 250 },
-        async qrCodeMessage => {
-          try {
-            const qrData = JSON.parse(qrCodeMessage);
-            const sessionId = qrData.session_id;
-            const subjectName = qrData.subject;
-
-            // call backend with helper
-            const resp = await sendMarkAttendance(rollno, sessionId, "Present");
-
-            if (resp.ok) {
-              if (resp.already_marked) {
-                showToast(`⚠️ Already marked for ${subjectName}`);
-              } else {
-                const todayDate = new Date().toISOString().split("T")[0];
-                showToast(`✅ Attendance marked for ${subjectName} on ${todayDate}`);
-              }
-              // optional: stop scanner after one valid scan
-              html5QrcodeScanner.stop();
-            }
-          } catch (e) {
-            showToast("Invalid QR Code");
-          }
-        },
-        errorMessage => {}
-      );
-
-      scannerStarted = true;
-    }
-  };
-async function sendMarkAttendance(rollNumber, sessionId) {
+html5QrcodeScanner.start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: 250 },
+  async (qrCodeMessage) => {
     try {
-        const response = await fetch("http://127.0.0.1:5000/api/attendance/mark", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ roll_number: rollNumber, session_id: sessionId })
-        });
+      const qrData = JSON.parse(qrCodeMessage);
+      const sessionId = qrData.session_id;
+      const subjectName = qrData.subject;
 
-        const data = await response.json();
-        console.log("API Response:", data);
+      // Call backend
+      const resp = await fetch("http://192.168.1.23:5000/api/attendance/mark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roll_number: rollno, session_id: sessionId })
+      });
+      const data = await resp.json();
 
-        if (data.ok && !data.already_marked) {
-            alert("✅ Attendance marked successfully!");
-        } else if (data.already_marked) {
-            alert("ℹ️ Attendance already marked for this session.");
-        } else if (data.expired) {
-            alert("❌ QR has expired. Please contact your teacher.");
+      if (data.ok) {
+        if (data.already_marked) {
+          alert(`⚠️ Already marked for ${subjectName}`);
         } else {
-            alert("⚠️ Could not mark attendance: " + (data.error || data.message));
+          alert(`✅ Attendance marked for ${subjectName}`);
         }
-
-    } catch (err) {
-        console.error("Fetch error:", err);
-        alert("⚠️ Network error. Try again!");
+        html5QrcodeScanner.stop();
+      }
+    } catch (e) {
+      alert("❌ Invalid QR Code or Network error");
     }
-}
-
-  function showToast(msg) {
-    alert(msg); // replace with a toast/snackbar if you have UI
+  },
+  (errorMessage) => {
+    // scanning errors ignored
   }
+).catch(err => console.error("Camera start failed", err));
 </script>
 </body>
 </html>

@@ -277,7 +277,7 @@ async function loadAttendance() {
 
   try {
     const res = await fetch(
-      `http://127.0.0.1:5000/api/get_attendance?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}&date=${date}`
+      `http://192.168.1.23:5000/api/get_attendance?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}&date=${date}`
     );
     let data = await res.json();
 
@@ -334,20 +334,21 @@ async function loadAttendance() {
 
     // ✅ Toggle attendance API call
     async function toggleAttendance(roll_no, date, subject) {
-      try {
-        const res = await fetch("http://127.0.0.1:5000/api/update_attendance", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ roll_no, date, subject })
-        });
-        const result = await res.json();
-        alert(result.message);
-        loadAttendance(); // refresh table
-      } catch (err) {
-        console.error("Error updating:", err);
-        alert("❌ Failed to update attendance.");
-      }
-    }
+  try {
+    const res = await fetch("http://192.168.1.23:5000/api/update_attendance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roll_no, date, subject })
+    });
+    const result = await res.json();
+    alert(result.message);
+    loadAttendance(); // refresh table
+  } catch (err) {
+    console.error("Error updating:", err);
+    alert("❌ Failed to update attendance.");
+  }
+}
+
   </script>
 </body>
 </html>
