@@ -93,7 +93,7 @@
 
     try {
       // ✅ Directly call fetch here
-      const res = await fetch("http://127.0.0.1:5000/api/generate_qr", {
+      const res = await fetch("https://preroyal-kelly-stuporously.ngrok-free.dev/api/generate_qr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(qrData),

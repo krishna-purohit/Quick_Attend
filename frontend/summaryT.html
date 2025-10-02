@@ -182,7 +182,7 @@
 
     try {
       const res = await fetch(
-        `http://192.168.1.23:5000/api/teacher/summary?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}`
+        `https://preroyal-kelly-stuporously.ngrok-free.dev/api/teacher/summary?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}`
       );
 
       const data = await res.json();

@@ -624,37 +624,11 @@ def student_monthly_report(roll):
     """
     Returns subject-wise attendance for a student for all months (or specific month if passed)
     """
-    month = request.args.get("month")  # optional, YYYY-MM
-
     try:
         cnx = get_db_connection()
         cur = cnx.cursor(dictionary=True)
-
-        if month:
-            # if month is passed, use only that month
-            query = """
-            SELECT 
-                q.subject AS subject,
-                COUNT(q.session_id) AS total_classes,
-                SUM(CASE WHEN a.attendance_id IS NOT NULL AND a.status IN ('P','Present') THEN 1 ELSE 0 END) AS attended
-            FROM qrsession q
-            JOIN student s
-                ON s.roll_number = %s
-                AND LOWER(TRIM(REPLACE(s.class,' ',''))) = LOWER(TRIM(REPLACE(q.class,' ','')))
-                AND LOWER(TRIM(REPLACE(s.stream,' ',''))) = LOWER(TRIM(REPLACE(q.stream,' ','')))
-                AND LOWER(TRIM(REPLACE(s.semester,'Sem ',''))) = LOWER(TRIM(REPLACE(q.semester,'Sem ','')))
-            LEFT JOIN attendance a
-                ON a.session_id = q.session_id
-                AND a.student_id = s.student_id
-            WHERE DATE_FORMAT(q.date, '%%Y-%%m') = %s
-            GROUP BY q.subject
-            ORDER BY q.subject;
-            """
-            cur.execute(query, (roll, month))
-            month_label = month
-        else:
             # No month passed → get all sessions for the student
-            query = """
+        query = """
             SELECT 
                 q.subject AS subject,
                 COUNT(q.session_id) AS total_classes,
@@ -671,8 +645,8 @@ def student_monthly_report(roll):
             GROUP BY q.subject
             ORDER BY q.subject;
             """
-            cur.execute(query, (roll,))
-            month_label = "all_sessions"
+        cur.execute(query, (roll,))
+            
 
         rows = cur.fetchall()
         cur.close()
@@ -692,7 +666,6 @@ def student_monthly_report(roll):
 
         return jsonify({
             "roll": roll,
-            "month": month_label,
             "records": records
         }), 200
 

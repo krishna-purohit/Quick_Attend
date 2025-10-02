@@ -277,7 +277,7 @@ async function loadAttendance() {
 
   try {
     const res = await fetch(
-      `http://192.168.1.23:5000/api/get_attendance?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}&date=${date}`
+      `https://preroyal-kelly-stuporously.ngrok-free.dev/api/get_attendance?class=${className}&stream=${stream}&semester=${semester}&subject=${subject}&date=${date}`
     );
     let data = await res.json();
 
@@ -335,7 +335,7 @@ async function loadAttendance() {
     // ✅ Toggle attendance API call
     async function toggleAttendance(roll_no, date, subject) {
   try {
-    const res = await fetch("http://192.168.1.23:5000/api/update_attendance", {
+    const res = await fetch("https://preroyal-kelly-stuporously.ngrok-free.dev/api/update_attendance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roll_no, date, subject })
